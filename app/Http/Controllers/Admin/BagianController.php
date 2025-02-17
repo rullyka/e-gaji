@@ -10,12 +10,39 @@ use App\Models\Departemen;
 class BagianController extends Controller
 {
     /**
-     * Menampilkan daftar semua bagian
+     * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua data bagian dengan relasi departemen dan urutkan berdasarkan nama
-        $bagians = Bagian::with('departemen')->orderBy('name_bagian')->get();
+        // Pagination dengan Laravel's built-in paginator
+        $perPage = $request->input('per_page', 15); // Default 15 items per page
+        $search = $request->input('search', '');
+
+        $query = Bagian::with('departemen')->orderBy('name_bagian');
+
+        // Apply search if provided
+        if (!empty($search)) {
+            $query->where('name_bagian', 'LIKE', "%{$search}%")
+                ->orWhereHas('departemen', function ($q) use ($search) {
+                    $q->where('name_departemen', 'LIKE', "%{$search}%");
+                });
+        }
+
+        // Get paginated results
+        $bagians = $query->paginate($perPage);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'data' => $bagians->items(),
+                'pagination' => [
+                    'total' => $bagians->total(),
+                    'per_page' => $bagians->perPage(),
+                    'current_page' => $bagians->currentPage(),
+                    'last_page' => $bagians->lastPage(),
+                ]
+            ]);
+        }
+
         return view('admin.bagians.index', compact('bagians'));
     }
 
@@ -75,7 +102,7 @@ class BagianController extends Controller
     {
         // Validasi input dari form edit
         $request->validate([
-            'name_bagian' => 'required|string|max:255|unique:bagians,name_bagian,'.$bagian->id,
+            'name_bagian' => 'required|string|max:255|unique:bagians,name_bagian,' . $bagian->id,
             'id_departemen' => 'nullable|exists:departemens,id',
         ]);
 
@@ -93,7 +120,7 @@ class BagianController extends Controller
     public function destroy(Bagian $bagian)
     {
         // Cek apakah masih ada karyawan di bagian ini
-        if($bagian->karyawans()->exists()) {
+        if ($bagian->karyawans()->exists()) {
             // Jika masih ada karyawan, tampilkan pesan error
             return redirect()->route('bagians.index')
                 ->with('error', 'Hapus semua karyawan pada bagian ini terlebih dahulu');

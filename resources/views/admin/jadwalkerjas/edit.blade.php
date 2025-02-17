@@ -36,28 +36,36 @@
             @method('PUT')
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <div class="form-group">
-                        <label for="tanggal">Tanggal <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" name="tanggal" value="{{ old('tanggal', $jadwalkerja->tanggal->format('Y-m-d')) }}" required>
-                        @error('tanggal')
+                        <label for="karyawan_id">Karyawan <span class="text-danger">*</span></label>
+                        <div class="form-group">
+                            <!-- Display the karyawan's name as a readonly field -->
+                            <input type="text" class="form-control @error('karyawan_id') is-invalid @enderror" id="karyawan_id" name="karyawan_id" value="{{ old('karyawan_id', $jadwalkerja->karyawan->nama_karyawan) }}" readonly>
+
+                            <!-- Hidden field to submit karyawan_id -->
+                            <input type="hidden" name="karyawan_id" value="{{ old('karyawan_id', $jadwalkerja->karyawan_id) }}">
+
+                            @error('karyawan_id')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                            @enderror
+                        </div>
+
+
+                        @error('karyawan_id')
                         <div class="invalid-feedback">
                             {{ $message }}
                         </div>
                         @enderror
                     </div>
-
+                </div>
+                <div class="col-md-6">
                     <div class="form-group">
-                        <label for="karyawan_id">Karyawan <span class="text-danger">*</span></label>
-                        <select class="form-control select2 @error('karyawan_id') is-invalid @enderror" id="karyawan_id" name="karyawan_id" required>
-                            <option value="">-- Pilih Karyawan --</option>
-                            @foreach($karyawans as $karyawan)
-                            <option value="{{ $karyawan->id }}" {{ old('karyawan_id', $jadwalkerja->karyawan_id) == $karyawan->id ? 'selected' : '' }}>
-                                {{ $karyawan->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('karyawan_id')
+                        <label for="tanggal">Tanggal <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" readonly name="tanggal" value="{{ old('tanggal', $jadwalkerja->tanggal->format('Y-m-d')) }}" required>
+                        @error('tanggal')
                         <div class="invalid-feedback">
                             {{ $message }}
                         </div>
@@ -68,7 +76,7 @@
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="shift_id">Shift <span class="text-danger">*</span></label>
-                        <select class="form-control select2 @error('shift_id') is-invalid @enderror" id="shift_id" name="shift_id" required>
+                        <select class="form-control select2 @error('shift_id') is-invalid @enderror" id="shift_id" name="shift_id">
                             <option value="">-- Pilih Shift --</option>
                             @foreach($shifts as $shift)
                             <option value="{{ $shift->id }}" {{ old('shift_id', $jadwalkerja->shift_id) == $shift->id ? 'selected' : '' }}>

@@ -5,6 +5,11 @@
 @section('content_header')
 <div class="d-flex justify-content-between align-items-center">
     <h1><i class="mr-2 fas fa-calendar-alt text-primary"></i>Pengajuan Cuti Karyawan</h1>
+    @can_show('cuti_karyawan.create')
+    <a href="{{ route('cuti_karyawans.create') }}" class="btn btn-primary">
+        <i class="mr-1 fas fa-plus"></i> Ajukan Cuti
+    </a>
+    @endcan_show
 </div>
 @stop
 
@@ -27,136 +32,160 @@
 </div>
 @endif
 
-<div class="row">
-    <!-- Left sidebar with categories -->
-    <div class="col-md-3 col-lg-2">
-        <div class="card">
-            <div class="p-0 card-body">
-                <div class="p-3 compose-btn-container">
-                    @can_show('cuti_karyawan.create')
-                    <a href="{{ route('cuti_karyawans.create') }}" class="btn btn-primary btn-block">
-                        <i class="mr-1 fas fa-plus"></i> Ajukan Cuti
+<div class="card">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div class="d-flex mb-2">
+                <div class="btn-group mr-3">
+                    <a href="{{ route('cuti_karyawans.index') }}" class="btn btn-default {{ !request('status') || request('status') == 'all' ? 'active' : '' }}">
+                        Semua <span class="badge badge-light ml-1">{{ $totalCount }}</span>
                     </a>
-                    @endcan_show
-                </div>
-                <div class="list-group list-group-flush">
-                    <a href="#" class="list-group-item list-group-item-action active filter-category" data-filter="all">
-                        <i class="mr-2 fas fa-inbox"></i> Semua
-                        <span class="float-right badge badge-light">{{ count($cutiKaryawans) }}</span>
+                    <a href="{{ route('cuti_karyawans.index', ['status' => 'Menunggu Persetujuan']) }}" class="btn btn-default {{ request('status') == 'Menunggu Persetujuan' ? 'active' : '' }}">
+                        Menunggu <span class="badge badge-warning ml-1">{{ $pendingCount }}</span>
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Menunggu Persetujuan">
-                        <i class="mr-2 fas fa-clock text-warning"></i> Menunggu
-                        <span class="float-right badge badge-warning">{{ $cutiKaryawans->where('status_acc', 'Menunggu Persetujuan')->count() }}</span>
+                    <a href="{{ route('cuti_karyawans.index', ['status' => 'Disetujui']) }}" class="btn btn-default {{ request('status') == 'Disetujui' ? 'active' : '' }}">
+                        Disetujui <span class="badge badge-success ml-1">{{ $approvedCount }}</span>
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Disetujui">
-                        <i class="mr-2 fas fa-check text-success"></i> Disetujui
-                        <span class="float-right badge badge-success">{{ $cutiKaryawans->where('status_acc', 'Disetujui')->count() }}</span>
-                    </a>
-                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Ditolak">
-                        <i class="mr-2 fas fa-times text-danger"></i> Ditolak
-                        <span class="float-right badge badge-danger">{{ $cutiKaryawans->where('status_acc', 'Ditolak')->count() }}</span>
+                    <a href="{{ route('cuti_karyawans.index', ['status' => 'Ditolak']) }}" class="btn btn-default {{ request('status') == 'Ditolak' ? 'active' : '' }}">
+                        Ditolak <span class="badge badge-danger ml-1">{{ $rejectedCount }}</span>
                     </a>
                 </div>
             </div>
-        </div>
-    </div>
+            <form action="{{ route('cuti_karyawans.index') }}" method="GET" class="d-flex flex-wrap">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
 
-    <!-- Right side with inbox -->
-    <div class="col-md-9 col-lg-10">
-        <div class="card">
-            <div class="bg-white card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <div class="mr-2 input-group">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Cari pengajuan...">
-                            <div class="input-group-append">
-                                <span class="bg-transparent input-group-text">
-                                    <i class="fas fa-search"></i>
-                                </span>
+                <div class="d-flex mr-2 mb-2">
+                    <div class="mr-2">
+                        <label class="small text-muted d-block mb-1">Tanggal Mulai</label>
+                        <div class="input-group" style="width: 200px;">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
                             </div>
+                            <input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
                         </div>
                     </div>
                     <div>
-                        <button type="button" class="btn btn-light" id="refreshBtn">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
+                        <label class="small text-muted d-block mb-1">Tanggal Akhir</label>
+                        <div class="input-group" style="width: 200px;">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                            </div>
+                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="p-0 card-body">
-                <div class="inbox-container">
-                    @foreach($cutiKaryawans as $index => $cuti)
-                    <div class="inbox-item {{ $cuti->status_acc == 'Menunggu Persetujuan' ? 'unread' : '' }}" data-status="{{ $cuti->status_acc }}">
-                        <div class="inbox-item-checkbox">
-                            <div class="icheck-primary">
-                                <input type="checkbox" id="check{{ $cuti->id }}">
-                                <label for="check{{ $cuti->id }}"></label>
-                            </div>
+
+                <div class="mb-2">
+                    <label class="small text-muted d-block mb-1">Pencarian</label>
+                    <div class="input-group" style="width: 300px;">
+                        <input type="text" name="search" class="form-control" placeholder="Cari pengajuan..." value="{{ request('search') }}">
+                        <div class="input-group-append">
+                            <button class="btn btn-default" type="submit">
+                                <i class="fas fa-search"></i> Cari
+                            </button>
+                            <a href="{{ route('cuti_karyawans.index') }}" class="btn btn-default">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
                         </div>
-                        <div class="inbox-item-star">
-                            @if($cuti->status_acc == 'Menunggu Persetujuan')
-                            <i class="fas fa-circle text-warning"></i>
-                            @elseif($cuti->status_acc == 'Disetujui')
-                            <i class="fas fa-check-circle text-success"></i>
-                            @elseif($cuti->status_acc == 'Ditolak')
-                            <i class="fas fa-times-circle text-danger"></i>
-                            @endif
-                        </div>
-                        <div class="inbox-item-sender">
-                            <span class="sender-name">{{ $cuti->karyawan ? $cuti->karyawan->nama_karyawan : '-' }}</span>
-                        </div>
-                        <div class="inbox-item-subject">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="20%">Karyawan</th>
+                        <th width="20%">Jenis Cuti</th>
+                        <th width="20%">Periode</th>
+                        <th width="10%">Durasi</th>
+                        <th width="10%">Status</th>
+                        <th width="15%">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($cutiKaryawans as $index => $cuti)
+                    <tr>
+                        <td>{{ $cutiKaryawans->firstItem() + $index }}</td>
+                        <td>
+                            <strong>{{ $cuti->karyawan ? $cuti->karyawan->nama_karyawan : '-' }}</strong>
+                        </td>
+                        <td>
                             <span class="badge badge-{{ $cuti->jenis_cuti == 'Cuti' ? 'info' : 'secondary' }} mr-1">{{ $cuti->jenis_cuti }}</span>
                             {{ $cuti->masterCuti ? $cuti->masterCuti->uraian : 'Pengajuan Cuti' }}
-                        </div>
-                        <div class="inbox-item-date">
-                            <span class="date">{{ $cuti->tanggal_mulai_formatted }} s/d {{ $cuti->tanggal_akhir_formatted }}</span>
-                            <span class="ml-2 days">({{ $cuti->jumlah_hari_cuti }} hari)</span>
-                        </div>
-                        <div class="inbox-item-actions">
-                            <a href="{{ route('cuti_karyawans.show', $cuti) }}" class="btn btn-sm btn-light" title="Lihat Detail">
-                                <i class="fas fa-eye"></i>
-                            </a>
-
+                        </td>
+                        <td>{{ $cuti->tanggal_mulai_cuti->format('d-m-Y') }} s/d {{ $cuti->tanggal_akhir_cuti->format('d-m-Y') }}</td>
+                        <td>{{ $cuti->jumlah_hari_cuti }} hari</td>
+                        <td>
                             @if($cuti->status_acc == 'Menunggu Persetujuan')
-                                @can_show('cuti_karyawan.edit')
-                                <a href="{{ route('cuti_karyawans.edit', $cuti) }}" class="btn btn-sm btn-light" title="Edit Pengajuan">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                @endcan_show
-
-                                @can_show('cuti_karyawan.approve')
-                                <a href="{{ route('cuti_karyawans.approval', $cuti) }}" class="btn btn-sm btn-primary" title="Proses Pengajuan">
-                                    <i class="fas fa-check"></i>
-                                </a>
-                                @endcan_show
-
-                                @can_show('cuti_karyawan.delete')
-                                <form action="{{ route('cuti_karyawans.destroy', $cuti) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-light" title="Hapus Pengajuan" onclick="return confirm('Apakah Anda yakin ingin menghapus pengajuan ini?')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                                @endcan_show
-                            @else
-                                @can_show('cuti_karyawan.approve')
-                                <a href="{{ route('cuti_karyawans.approval', $cuti) }}" class="btn btn-sm btn-light" title="Lihat Detail Persetujuan">
-                                    <i class="fas fa-info-circle"></i>
-                                </a>
-                                @endcan_show
+                                <span class="badge badge-warning">Menunggu</span>
+                            @elseif($cuti->status_acc == 'Disetujui')
+                                <span class="badge badge-success">Disetujui</span>
+                            @elseif($cuti->status_acc == 'Ditolak')
+                                <span class="badge badge-danger">Ditolak</span>
                             @endif
-                        </div>
-                    </div>
-                    @endforeach
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ route('cuti_karyawans.show', $cuti) }}" class="btn btn-info" title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </a>
 
-                    @if(count($cutiKaryawans) == 0)
-                    <div class="py-5 text-center">
-                        <p class="text-muted">Tidak ada pengajuan cuti yang ditemukan</p>
-                    </div>
-                    @endif
-                </div>
+                                @if($cuti->status_acc == 'Menunggu Persetujuan')
+                                    @can_show('cuti_karyawan.edit')
+                                    <a href="{{ route('cuti_karyawans.edit', $cuti) }}" class="btn btn-primary" title="Edit Pengajuan">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    @endcan_show
+
+                                    @can_show('cuti_karyawan.approve')
+                                    <a href="{{ route('cuti_karyawans.approval', $cuti) }}" class="btn btn-success" title="Proses Pengajuan">
+                                        <i class="fas fa-check"></i>
+                                    </a>
+                                    @endcan_show
+
+                                    @can_show('cuti_karyawan.delete')
+                                    <form action="{{ route('cuti_karyawans.destroy', $cuti) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger" title="Hapus Pengajuan" onclick="return confirm('Apakah Anda yakin ingin menghapus pengajuan ini?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endcan_show
+                                @else
+                                    @can_show('cuti_karyawan.approve')
+                                    <a href="{{ route('cuti_karyawans.approval', $cuti) }}" class="btn btn-secondary" title="Lihat Detail Persetujuan">
+                                        <i class="fas fa-info-circle"></i>
+                                    </a>
+                                    @endcan_show
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="text-center py-3">
+                            <i class="mr-1 fas fa-info-circle"></i> Tidak ada pengajuan cuti yang ditemukan
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                Menampilkan {{ $cutiKaryawans->firstItem() ?? 0 }} sampai {{ $cutiKaryawans->lastItem() ?? 0 }} dari {{ $cutiKaryawans->total() }} data
+            </div>
+            <div>
+                {{ $cutiKaryawans->appends(request()->query())->links() }}
             </div>
         </div>
     </div>
@@ -165,103 +194,25 @@
 
 @section('css')
 <style>
-    .inbox-container {
-        border-top: 1px solid #e0e0e0;
+    .table {
+        margin-bottom: 0;
     }
 
-    .inbox-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 15px;
-        border-bottom: 1px solid #e0e0e0;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-
-    .inbox-item:hover {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        z-index: 1;
-        position: relative;
-    }
-
-    .inbox-item.unread {
-        background-color: #f2f6fc;
-        font-weight: 500;
-    }
-
-    .inbox-item-checkbox {
-        width: 30px;
-    }
-
-    .inbox-item-star {
-        width: 30px;
-        text-align: center;
-    }
-
-    .inbox-item-sender {
-        width: 180px;
-        padding-right: 15px;
-    }
-
-    .sender-name {
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .inbox-item-subject {
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        padding-right: 15px;
-        color: #5f6368;
-    }
-
-    .inbox-item.unread .inbox-item-subject {
-        color: #202124;
-    }
-
-    .inbox-item-date {
-        width: 100px;
-        text-align: right;
-        color: #5f6368;
-        font-size: 0.85rem;
-    }
-
-    .inbox-item-actions {
-        width: 120px;
-        text-align: right;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .inbox-item:hover .inbox-item-actions {
-        opacity: 1;
-    }
-
-    /* Left sidebar styles */
-    .list-group-item {
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        padding: 12px 15px;
-    }
-
-    .list-group-item.active {
-        background-color: #e8f0fe;
-        color: #1a73e8;
-        border-color: #e0e0e0;
-        font-weight: 600;
-    }
-
-    .list-group-item:first-child {
-        border-top: none;
-    }
-
-    .list-group-item:hover:not(.active) {
+    .table th {
+        border-top: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
         background-color: #f8f9fa;
+    }
+
+    .table td {
+        border-top: none;
+        border-bottom: 1px solid #dee2e6;
+        vertical-align: middle;
+    }
+
+    .badge {
+        font-weight: 500;
+        padding: 5px 8px;
     }
 
     .badge-warning {
@@ -279,188 +230,33 @@
         color: #721c24;
     }
 
-    .compose-btn-container {
-        border-bottom: 1px solid #e0e0e0;
+    .badge-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
     }
 
-    .btn-light {
-        background-color: #f8f9fa;
-        border-color: #dadce0;
+    .btn-group-sm > .btn {
+        padding: .25rem .5rem;
     }
 
-    .btn-light:hover {
-        background-color: #f1f3f4;
+    .btn-default.active {
+        background-color: #007bff;
+        color: white;
     }
 
-    .card {
-        border-radius: 8px;
-        border: 1px solid #dadce0;
-        box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-        margin-bottom: 20px;
-    }
-
-    .card-header {
-        border-bottom: 1px solid #dadce0;
-        padding: 12px 16px;
-    }
-
-    #searchInput {
-        border-radius: 24px;
-        padding-left: 15px;
-        background-color: #f1f3f4;
-        border: none;
-        height: 40px;
-    }
-
-    #searchInput:focus {
-        background-color: #fff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .input-group-text {
-        border: none;
-        background-color: transparent;
-    }
-
-    @media (max-width: 992px) {
-        .inbox-item-date {
-            width: 80px;
-        }
-
-        .inbox-item-sender {
-            width: 150px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .inbox-item {
-            flex-wrap: wrap;
-        }
-
-        .inbox-item-sender {
-            width: calc(100% - 60px);
-            order: 1;
-        }
-
-        .inbox-item-checkbox {
-            order: 0;
-        }
-
-        .inbox-item-star {
-            order: 2;
-        }
-
-        .inbox-item-subject {
-            width: 100%;
-            order: 3;
-            padding-left: 30px;
-            margin-top: 5px;
-        }
-
-        .inbox-item-date {
-            width: 50%;
-            order: 4;
-            text-align: left;
-            padding-left: 30px;
-            margin-top: 5px;
-        }
-
-        .inbox-item-actions {
-            width: 50%;
-            order: 5;
-            text-align: right;
-            margin-top: 5px;
-            opacity: 1;
-        }
+    .pagination {
+        margin-bottom: 0;
     }
 </style>
 @stop
+
 @section('js')
 <script>
     $(function() {
-        // Filter functionality using left sidebar
-        $('.filter-category').click(function(e) {
-            e.preventDefault();
-            $('.filter-category').removeClass('active');
-            $(this).addClass('active');
-
-            var filter = $(this).data('filter');
-
-            if (filter === 'all') {
-                $('.inbox-item').show();
-            } else {
-                $('.inbox-item').hide();
-                $('.inbox-item[data-status="' + filter + '"]').show();
-            }
-
-            updateEmptyState();
-        });
-
-        // Search functionality
-        $('#searchInput').on('keyup', function() {
-            var value = $(this).val().toLowerCase();
-            var visibleCount = 0;
-
-            $('.inbox-item').each(function() {
-                var text = $(this).text().toLowerCase();
-                var isVisible = text.indexOf(value) > -1;
-                $(this).toggle(isVisible);
-
-                if (isVisible) {
-                    visibleCount++;
-                }
-            });
-
-            updateEmptyState();
-        });
-
-        // Refresh button
-        $('#refreshBtn').click(function() {
-            $(this).find('i').addClass('fa-spin');
-            setTimeout(function() {
-                location.reload();
-            }, 500);
-        });
-
-        // Click on row to view details
-        $('.inbox-item').click(function(e) {
-            if (!$(e.target).is('input[type="checkbox"]') &&
-                !$(e.target).is('button') &&
-                !$(e.target).is('a') &&
-                !$(e.target).is('i') &&
-                !$(e.target).closest('button').length &&
-                !$(e.target).closest('a').length) {
-                var detailUrl = $(this).find('a[title="Lihat Detail"]').attr('href');
-                if (detailUrl) {
-                    window.location.href = detailUrl;
-                }
-            }
-        });
-
-        // Prevent checkbox from triggering row click
-        $('.inbox-item-checkbox input').click(function(e) {
-            e.stopPropagation();
-        });
-
-        // Function to show/hide empty state
-        function updateEmptyState() {
-            var visibleItems = $('.inbox-item:visible').length;
-
-            if (visibleItems === 0) {
-                if ($('.empty-state').length === 0) {
-                    $('.inbox-container').append(`
-                        <div class="py-5 text-center empty-state">
-                            <p class="text-muted">Tidak ada pengajuan cuti yang sesuai dengan filter</p>
-                        </div>
-                    `);
-                }
-            } else {
-                $('.empty-state').remove();
-            }
-        }
-
-        // Set first filter as active by default
-        $('.filter-btn[data-filter="all"]').addClass('active');
+        // Fade out alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
     });
 </script>
 @stop

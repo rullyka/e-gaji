@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\CutiKaryawanController;
 use App\Http\Controllers\Admin\MesinAbsensiController;
 use App\Http\Controllers\Admin\ProgramStudiController;
 use App\Http\Controllers\Admin\KuotaCutiTahunanController;
+use App\Http\Controllers\Admin\SpecialPermissionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -291,9 +292,15 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('/absensis/sync', [AbsensiController::class, 'startSync'])
         ->name('absensis.sync');
     Route::get('/absensis/report/daily', [AbsensiController::class, 'dailyReport'])
-        ->name('absensis.report.daily');
+        ->name('admin.absensis.daily-report');
+    Route::get('/absensis/getTodaySummary', [AbsensiController::class, 'getTodaySummary'])
+        ->name('admin.absensis.getTodaySummary');
+    Route::get('/absensis/fetchLatestData', [AbsensiController::class, 'fetchLatestData'])
+        ->name('admin.absensis.fetchLatestData');
     Route::get('/absensis/report/employee', [AbsensiController::class, 'employeeReport'])
         ->name('absensis.report.employee');
+    // Add this with your other admin routes
+    Route::post('/absensis/checkout', [AbsensiController::class, 'checkout'])->name('absensis.checkout');
 
     // Mesin Absensi
     Route::resource('mesinabsensis', MesinAbsensiController::class);
@@ -368,10 +375,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         ->name('penggajian.addComponent');
     Route::delete('penggajian/{penggajian}/remove-component', [PenggajianController::class, 'removeComponent'])
         ->name('penggajian.removeComponent');
-    Route::post('penggajian/review', [PenggajianController::class, 'review'])
-        ->name('penggajian.review');
-    Route::post('penggajian/process', [PenggajianController::class, 'process'])
-        ->name('penggajian.process');
+    // Add or check if this route exists
+    Route::post('/penggajian/review', [PenggajianController::class, 'review'])->name('penggajian.review');
+    // Ganti dengan:
+    Route::post('/penggajian/process', [PenggajianController::class, 'process'])->name('penggajian.process');
 
     // Payroll Reports
     Route::get('penggajian-report/by-period', [PenggajianController::class, 'reportByPeriod'])
@@ -392,3 +399,17 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
 // Authentication Routes
 require __DIR__ . '/auth.php';
+
+// Tambahkan ini di bagian atas file setelah namespace
+Route::get('/routes', function () {
+    $routes = collect(Route::getRoutes())->map(function ($route) {
+        return [
+            'uri' => $route->uri(),
+            'name' => $route->getName(),
+            'methods' => $route->methods(),
+            'action' => $route->getActionName(),
+        ];
+    });
+
+    return response()->json($routes);
+});

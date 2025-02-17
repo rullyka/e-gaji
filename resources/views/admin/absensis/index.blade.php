@@ -3,400 +3,589 @@
 @section('title', 'Manajemen Absensi')
 
 @section('content_header')
-<div class="d-flex justify-content-between align-items-center">
-    <h1><i class="mr-2 fas fa-clipboard-check text-primary"></i>Manajemen Absensi</h1>
-</div>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1><i class="mr-2 fas fa-clipboard-check text-primary"></i>Manajemen Absensi</h1>
+        <div>
+            <a href="{{ route('admin.absensis.daily-report') }}" class="btn btn-info">
+                <i class="mr-1 fas fa-file-alt"></i> Laporan Harian
+            </a>
+            {{-- <a href="{{ route('absensis.fetch-form') }}" class="btn btn-warning ml-2">
+                <i class="mr-1 fas fa-sync"></i> Sinkronisasi Mesin
+            </a> --}}
+            @can('absensis.create')
+                <a href="{{ route('absensis.create') }}" class="ml-2 btn btn-primary">
+                    <i class="mr-1 fas fa-plus"></i> Tambah Absensi
+                </a>
+            @endcan
+        </div>
+    </div>
 @stop
 
 @section('content')
-@if(session('success'))
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="mr-1 fas fa-check-circle"></i> {{ session('success') }}
-    <button type="button" class="close" data-dismiss="alert">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
-@endif
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="mr-1 fas fa-check-circle"></i> {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
 
-@if(session('error'))
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="mr-1 fas fa-exclamation-circle"></i> {{ session('error') }}
-    <button type="button" class="close" data-dismiss="alert">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
-@endif
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="mr-1 fas fa-exclamation-circle"></i> {{ session('error') }}
+            <button type="button" class="close" data-dismiss="alert">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
 
-<!-- Info Boxes -->
-<div class="row">
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-user-check"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Hadir</span>
-                <span class="info-box-number">{{ $absensis->where('status', 'Hadir')->count() }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-clock"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Terlambat</span>
-                <span class="info-box-number">{{ $absensis->where('status', 'Terlambat')->count() }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-procedures"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Sakit</span>
-                <span class="info-box-number">{{ $absensis->where('status', 'Sakit')->count() }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user-times"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Tidak Hadir</span>
-                <span class="info-box-number">{{ $absensis->whereIn('status', ['Izin', 'Cuti'])->count() }}</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Left sidebar with years and months -->
-    <div class="col-md-4 col-lg-3">
-        <div class="card">
-            <div class="p-0 card-body">
-                <div class="p-3 compose-btn-container">
-                    @can_show('absensis.create')
-                    <a href="{{ route('absensis.create') }}" class="btn btn-primary btn-block">
-                        <i class="mr-1 fas fa-plus"></i> Tambah Absensi Baru
-                    </a>
-                    @endcan_show
+    <!-- Info Boxes -->
+    <div class="row">
+        <div class="col-12 col-sm-6 col-md-2">
+            <div class="info-box mb-3">
+                <span class="info-box-icon bg-info elevation-1"><i class="fas fa-users"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Total</span>
+                    <span class="info-box-number" id="total-count">{{ $absensis->count() }}</span>
                 </div>
-                <div class="list-group list-group-flush">
-                    <a href="#" class="list-group-item list-group-item-action active filter-year" data-filter="all">
-                        <i class="mr-2 fas fa-calendar"></i> Semua Absensi
-                        <span class="float-right badge badge-light">{{ count($absensis) }}</span>
-                    </a>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+            <div class="info-box mb-3">
+                <span class="info-box-icon bg-success elevation-1"><i class="fas fa-user-check"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Hadir</span>
+                    <span class="info-box-number" id="hadir-count">{{ $absensis->where('status', 'Hadir')->count() }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+            <div class="info-box mb-3">
+                <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-clock"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Terlambat</span>
+                    <span class="info-box-number"
+                        id="terlambat-count">{{ $absensis->where('status', 'Terlambat')->count() }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+            <div class="info-box mb-3">
+                <span class="info-box-icon bg-primary elevation-1"><i class="fas fa-procedures"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Sakit</span>
+                    <span class="info-box-number" id="sakit-count">{{ $absensis->where('status', 'Sakit')->count() }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+            <div class="info-box mb-3">
+                <span class="info-box-icon bg-secondary elevation-1"><i class="fas fa-umbrella-beach"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Cuti/Izin</span>
+                    <span class="info-box-number"
+                        id="cuti-izin-count">{{ $absensis->whereIn('status', ['Izin', 'Cuti'])->count() }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-md-2">
+            <div class="info-box mb-3">
+                <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-calendar-times"></i></span>
+                <div class="info-box-content">
+                    <span class="info-box-text">Libur</span>
+                    <span class="info-box-number" id="libur-count">{{ $absensis->where('status', 'Libur')->count() }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    @php
-                        $years = $absensis->groupBy(function($date) {
-                            return $date->tanggal->format('Y');
-                        });
-
-                        $currentYear = date('Y');
-                    @endphp
-
-                    @foreach($years as $year => $items)
-                        <a href="#" class="list-group-item list-group-item-action filter-year" data-filter="{{ $year }}" data-toggle="collapse" data-target="#months-{{ $year }}">
-                            <i class="mr-2 fas fa-calendar-alt"></i> {{ $year }}
-                            <span class="float-right badge badge-info">{{ count($items) }}</span>
+    <div class="card">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex mb-2">
+                    <div class="btn-group mr-3">
+                        <a href="{{ route('absensis.index') }}"
+                            class="btn btn-default {{ !request('status') || request('status') == 'all' ? 'active' : '' }}">
+                            Semua <span class="badge badge-light ml-1" id="total-badge">{{ $absensis->count() }}</span>
                         </a>
-
-                        <div id="months-{{ $year }}" class="collapse {{ $year == $currentYear ? 'show' : '' }}">
-                            @php
-                                $months = $items->groupBy(function($date) {
-                                    return $date->tanggal->format('m');
-                                });
-
-                                $monthNames = [
-                                    '01' => 'Januari',
-                                    '02' => 'Februari',
-                                    '03' => 'Maret',
-                                    '04' => 'April',
-                                    '05' => 'Mei',
-                                    '06' => 'Juni',
-                                    '07' => 'Juli',
-                                    '08' => 'Agustus',
-                                    '09' => 'September',
-                                    '10' => 'Oktober',
-                                    '11' => 'November',
-                                    '12' => 'Desember'
-                                ];
-                            @endphp
-
-                            @foreach($months as $month => $monthItems)
-                                <a href="#" class="pl-5 list-group-item list-group-item-action filter-month" data-year="{{ $year }}" data-month="{{ $month }}">
-                                    <i class="mr-2 fas fa-calendar-day"></i> {{ $monthNames[$month] }}
-                                    <span class="float-right badge badge-secondary">{{ count($monthItems) }}</span>
-                                </a>
-                            @endforeach
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right side with data table -->
-    <div class="col-md-8 col-lg-9">
-        <div class="card">
-            <div class="bg-white card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h3 class="card-title" id="current-filter">Semua Absensi</h3>
-                    <div>
-                        <button type="button" class="btn btn-light" id="refreshBtn">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
+                        <a href="{{ route('absensis.index', ['status' => 'Hadir']) }}"
+                            class="btn btn-default {{ request('status') == 'Hadir' ? 'active' : '' }}">
+                            Hadir <span
+                                class="badge badge-success ml-1">{{ $absensis->where('status', 'Hadir')->count() }}</span>
+                        </a>
+                        <a href="{{ route('absensis.index', ['status' => 'Terlambat']) }}"
+                            class="btn btn-default {{ request('status') == 'Terlambat' ? 'active' : '' }}">
+                            Terlambat <span
+                                class="badge badge-warning ml-1">{{ $absensis->where('status', 'Terlambat')->count() }}</span>
+                        </a>
+                        <a href="{{ route('absensis.index', ['status' => 'Izin']) }}"
+                            class="btn btn-default {{ request('status') == 'Izin' ? 'active' : '' }}">
+                            Izin <span
+                                class="badge badge-info ml-1">{{ $absensis->where('status', 'Izin')->count() }}</span>
+                        </a>
+                        <a href="{{ route('absensis.index', ['status' => 'Sakit']) }}"
+                            class="btn btn-default {{ request('status') == 'Sakit' ? 'active' : '' }}">
+                            Sakit <span
+                                class="badge badge-primary ml-1">{{ $absensis->where('status', 'Sakit')->count() }}</span>
+                        </a>
+                        <a href="{{ route('absensis.index', ['status' => 'Cuti']) }}"
+                            class="btn btn-default {{ request('status') == 'Cuti' ? 'active' : '' }}">
+                            Cuti <span
+                                class="badge badge-secondary ml-1">{{ $absensis->where('status', 'Cuti')->count() }}</span>
+                        </a>
                     </div>
                 </div>
+                <form action="{{ route('absensis.index') }}" method="GET" class="d-flex flex-wrap">
+                    @if (request('status'))
+                        <input type="hidden" name="status" value="{{ request('status') }}">
+                    @endif
+
+                    <div class="d-flex mr-2 mb-2">
+                        <div class="mr-2">
+                            <label class="small text-muted d-block mb-1">Tanggal</label>
+                            <div class="input-group" style="width: 200px;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                                </div>
+                                <input type="date" name="tanggal" class="form-control"
+                                    value="{{ request('tanggal', date('Y-m-d')) }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mr-2 mb-2">
+                        <label class="small text-muted d-block mb-1">Karyawan</label>
+                        <select class="form-control select2" name="karyawan_id" style="width: 200px;">
+                            <option value="">-- Semua Karyawan --</option>
+                            @foreach ($karyawans as $karyawan)
+                                <option value="{{ $karyawan->id }}"
+                                    {{ request('karyawan_id') == $karyawan->id ? 'selected' : '' }}>
+                                    {{ $karyawan->nama_karyawan }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="small text-muted d-block mb-1">Pencarian</label>
+                        <div class="input-group" style="width: 300px;">
+                            <input type="text" name="search" class="form-control" placeholder="Cari absensi..."
+                                value="{{ request('search') }}">
+                            <div class="input-group-append">
+                                <button class="btn btn-default" type="submit">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                                <a href="{{ route('absensis.index') }}" class="btn btn-default">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
             </div>
+        </div>
+
+        @php
+            // Check if the current date is a holiday
+            $currentDate = request('tanggal', \Carbon\Carbon::today()->format('Y-m-d'));
+            $hariLibur = \App\Models\HariLibur::where('tanggal', $currentDate)->first();
+        @endphp
+
+        @if ($hariLibur)
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered" id="absensiTable">
-                        <thead>
+                <div class="alert alert-info mb-0">
+                    <h5><i class="fas fa-calendar-alt mr-2"></i>Hari Libur: {{ $hariLibur->nama_libur }}</h5>
+                    <p class="mb-0">Tanggal: {{ \Carbon\Carbon::parse($hariLibur->tanggal)->format('d F Y') }}</p>
+                    <p class="mb-0">Semua karyawan dianggap libur pada hari ini.</p>
+
+                    @if ($absensis->where('status', 'Libur')->count() == 0)
+                        <div class="mt-3">
+                            <a href="{{ route('absensis.create-holiday', $hariLibur->id) }}"
+                                class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus mr-1"></i> Buat Absensi Otomatis untuk Semua Karyawan
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="20%">Karyawan</th>
+                            <th width="10%">Tanggal</th>
+                            <th width="10%">Jam Masuk</th>
+                            <th width="10%">Jam Pulang</th>
+                            <th width="10%">Total Jam</th>
+                            <th width="10%">Status</th>
+                            <th width="15%">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($absensis as $index => $absensi)
                             <tr>
-                                <th width="10">#</th>
-                                <th>Karyawan</th>
-                                <th>Tanggal</th>
-                                <th>Jam Masuk</th>
-                                <th>Jam Pulang</th>
-                                <th>Total Jam</th>
-                                <th>Status</th>
-                                <th>Absensi Masuk</th>
-                                <th>Absensi Pulang</th>
-                                @can_show('absensis.edit')
-                                <th width="150">Action</th>
-                                @endcan_show
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($absensis as $index => $absensi)
-                            <tr data-id="{{ $absensi->id }}" data-year="{{ $absensi->tanggal->format('Y') }}" data-month="{{ $absensi->tanggal->format('m') }}">
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $absensi->karyawan->nama_karyawan ?? 'N/A' }}</td>
+                                <td>{{ $absensis->firstItem() + $index }}</td>
+                                <td>
+                                    <strong>{{ $absensi->karyawan->nama_karyawan ?? 'N/A' }}</strong>
+                                    @if ($absensi->karyawan)
+                                        <div class="small text-muted">
+                                            {{ $absensi->karyawan->nik_karyawan ?? 'Tidak ada NIK' }}</div>
+                                    @endif
+                                </td>
                                 <td>{{ $absensi->tanggal->format('d-m-Y') }}</td>
-                                <td>{{ $absensi->jam_masuk ? \Carbon\Carbon::parse($absensi->jam_masuk)->format('H:i') : '-' }}</td>
-                                <td>{{ $absensi->jam_pulang ? \Carbon\Carbon::parse($absensi->jam_pulang)->format('H:i') : '-' }}</td>
+                                <td>
+                                    @if ($absensi->jam_masuk)
+                                        {{ \Carbon\Carbon::parse($absensi->jam_masuk)->format('H:i') }}
+                                        @if ($absensi->keterlambatan > 0)
+                                            <div class="small text-danger">
+                                                <i class="fas fa-exclamation-circle"></i> {{ $absensi->keterlambatan }}
+                                                menit
+                                            </div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($absensi->jam_pulang)
+                                        {{ \Carbon\Carbon::parse($absensi->jam_pulang)->format('H:i') }}
+                                        @if ($absensi->pulang_awal > 0)
+                                            <div class="small text-warning">
+                                                <i class="fas fa-exclamation-circle"></i> {{ $absensi->pulang_awal }}
+                                                menit
+                                            </div>
+                                        @endif
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                                 <td>{{ $absensi->total_jam ?? '-' }}</td>
                                 <td>
-                                    @if($absensi->status == 'Hadir')
-                                    <span class="badge badge-success">{{ $absensi->status }}</span>
+                                    @if ($absensi->status == 'Hadir')
+                                        <span class="badge badge-success">{{ $absensi->status }}</span>
                                     @elseif($absensi->status == 'Terlambat')
-                                    <span class="badge badge-warning">{{ $absensi->status }}</span>
+                                        <span class="badge badge-warning">{{ $absensi->status }}</span>
                                     @elseif($absensi->status == 'Izin')
-                                    <span class="badge badge-info">{{ $absensi->status }}</span>
+                                        <span class="badge badge-info">{{ $absensi->status }}</span>
                                     @elseif($absensi->status == 'Sakit')
-                                    <span class="badge badge-primary">{{ $absensi->status }}</span>
+                                        <span class="badge badge-primary">{{ $absensi->status }}</span>
                                     @elseif($absensi->status == 'Cuti')
-                                    <span class="badge badge-secondary">{{ $absensi->status }}</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    {{ $absensi->jenis_absensi_masuk }}
-                                    @if($absensi->jenis_absensi_masuk == 'Mesin')
-                                    <br><small>({{ $absensi->mesinAbsensiMasuk->nama ?? 'N/A' }})</small>
-                                    @endif
-                                </td>
-                                <td>
-                                    {{ $absensi->jenis_absensi_pulang }}
-                                    @if($absensi->jenis_absensi_pulang == 'Mesin')
-                                    <br><small>({{ $absensi->mesinAbsensiPulang->nama ?? 'N/A' }})</small>
-                                    @endif
-                                </td>
-                                @can_show('absensis.edit')
-                                <td>
-                                    <a href="{{ route('absensis.show', $absensi) }}" class="btn btn-info btn-sm">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-
-                                    @if($absensi->jam_pulang == null && $absensi->status != 'Izin' && $absensi->status != 'Sakit' && $absensi->status != 'Cuti')
-                                    <a href="{{ route('absensis.checkout', $absensi) }}" class="btn btn-success btn-sm">
-                                        <i class="fas fa-sign-out-alt"></i> Absen Pulang
-                                    </a>
-                                    @else
-                                    <a href="{{ route('absensis.edit', $absensi) }}" class="btn btn-warning btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                        <span class="badge badge-secondary">{{ $absensi->status }}</span>
+                                    @elseif($absensi->status == 'Libur')
+                                        <span class="badge badge-danger">{{ $absensi->status }}</span>
                                     @endif
 
-                                    <form action="{{ route('absensis.destroy', $absensi) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    @if ($absensi->keterangan)
+                                        <div class="small text-muted mt-1" title="{{ $absensi->keterangan }}">
+                                            {{ \Str::limit($absensi->keterangan, 20) }}
+                                        </div>
+                                    @endif
                                 </td>
-                                @endcan_show
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('absensis.show', $absensi) }}" class="btn btn-info"
+                                            title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        @if (
+                                            $absensi->jam_pulang == null &&
+                                                $absensi->status != 'Izin' &&
+                                                $absensi->status != 'Sakit' &&
+                                                $absensi->status != 'Cuti' &&
+                                                $absensi->status != 'Libur')
+                                            <button type="button" class="btn btn-success checkout-btn"
+                                                data-toggle="modal" data-target="#checkoutModal"
+                                                data-id="{{ $absensi->id }}"
+                                                data-karyawan="{{ $absensi->karyawan->nama_karyawan ?? 'N/A' }}"
+                                                data-karyawan-id="{{ $absensi->karyawan_id }}" title="Absen Pulang">
+                                                <i class="fas fa-sign-out-alt"></i>
+                                            </button>
+                                        @endif
+
+                                        <a href="{{ route('absensis.edit', $absensi) }}" class="btn btn-primary"
+                                            title="Edit Absensi">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+
+                                        <form action="{{ route('absensis.destroy', $absensi) }}" method="POST"
+                                            class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger" title="Hapus Absensi"
+                                                onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-3">
+                                    <i class="mr-1 fas fa-info-circle"></i> Tidak ada data absensi yang ditemukan
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    Menampilkan {{ $absensis->firstItem() ?? 0 }} sampai {{ $absensis->lastItem() ?? 0 }} dari
+                    {{ $absensis->total() }} data
+                </div>
+                <div>
+                    {{ $absensis->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>
     </div>
-</div>
+
+    <!-- Checkout Modal -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1" role="dialog" aria-labelledby="checkoutModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="checkoutModalLabel">Absen Pulang</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ route('absensis.checkout') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <input type="hidden" name="karyawan_id" id="karyawan_id">
+
+                        <div class="form-group">
+                            <label>Karyawan</label>
+                            <input type="text" class="form-control" id="karyawan_nama" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Jam Pulang</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-clock"></i></span>
+                                </div>
+                                <input type="time" name="jam_pulang" class="form-control"
+                                    value="{{ now()->format('H:i') }}" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Jenis Absensi</label>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="manual" name="jenis_absensi_pulang"
+                                    class="custom-control-input" value="Manual" checked>
+                                <label class="custom-control-label" for="manual">Manual</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="mesin" name="jenis_absensi_pulang"
+                                    class="custom-control-input" value="Mesin">
+                                <label class="custom-control-label" for="mesin">Mesin</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mesin-options" style="display: none;">
+                            <label>Mesin Absensi</label>
+                            <select name="mesinabsensi_pulang_id" class="form-control">
+                                <option value="">-- Pilih Mesin --</option>
+                                @foreach ($mesinAbsensis ?? [] as $mesin)
+                                    <option value="{{ $mesin->id }}">{{ $mesin->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @stop
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('vendor/datatables/css/dataTables.bootstrap4.min.css') }}">
-<style>
-    /* Left sidebar styles */
-    .list-group-item {
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
-        padding: 12px 15px;
-        display: flex;
-        align-items: center;
-    }
+    <style>
+        .table {
+            margin-bottom: 0;
+        }
 
-    .list-group-item.active {
-        background-color: #e8f0fe;
-        color: #1a73e8;
-        border-color: #e0e0e0;
-        font-weight: 600;
-    }
+        .table th {
+            border-top: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+        }
 
-    .list-group-item:first-child {
-        border-top: none;
-    }
+        .table td {
+            border-top: none;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
 
-    .list-group-item:hover:not(.active) {
-        background-color: #f8f9fa;
-    }
+        .badge {
+            font-weight: 500;
+            padding: 5px 8px;
+        }
 
-    .list-group-item i {
-        margin-right: 8px;
-        min-width: 16px;
-    }
+        .badge-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
 
-    .list-group-item .badge {
-        margin-left: auto;
-        min-width: 28px;
-        text-align: center;
-        padding: 4px 6px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
+        .badge-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
 
-    .badge-light {
-        background-color: #f8f9fa;
-        color: #212529;
-    }
+        .badge-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
 
-    .badge-info {
-        background-color: #e1f5fe;
-        color: #0288d1;
-    }
+        .badge-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
 
-    .badge-secondary {
-        background-color: #eceff1;
-        color: #455a64;
-    }
+        .badge-primary {
+            background-color: #cce5ff;
+            color: #004085;
+        }
 
-    .compose-btn-container {
-        border-bottom: 1px solid #e0e0e0;
-    }
+        .badge-secondary {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
 
-    .card {
-        border-radius: 8px;
-        border: 1px solid #dadce0;
-        box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-        margin-bottom: 20px;
-    }
+        .btn-group-sm>.btn {
+            padding: .25rem .5rem;
+        }
 
-    .card-header {
-        border-bottom: 1px solid #dadce0;
-        padding: 12px 16px;
-    }
+        .btn-default.active {
+            background-color: #007bff;
+            color: white;
+        }
 
-    #refreshBtn {
-        background-color: #f8f9fa;
-        border-color: #dadce0;
-    }
-
-    #refreshBtn:hover {
-        background-color: #f1f3f4;
-    }
-
-    .info-box {
-        box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-        border-radius: 8px;
-    }
-</style>
+        .pagination {
+            margin-bottom: 0;
+        }
+    </style>
 @stop
+
 @section('js')
-<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
-<script src="{{ asset('vendor/datatables/js/dataTables.bootstrap4.min.js') }}"></script>
-<script>
-    $(function() {
-        // Initialize DataTable
-        var table = $('#absensiTable').DataTable({
-            "paging": true,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": true,
-            "order": [[2, 'desc']], // Urutkan berdasarkan tanggal
-            "columnDefs": [
-                {
-                    "targets": 0,
-                    "render": function (data, type, row, meta) {
-                        return meta.row + 1;
-                    }
+    <script>
+        $(function() {
+            // Initialize select2
+            $('.select2').select2();
+
+            // Fade out alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+
+            // Toggle mesin options based on absensi type
+            $('input[name="jenis_absensi_pulang"]').change(function() {
+                if ($(this).val() === 'Mesin') {
+                    $('.mesin-options').slideDown();
+                } else {
+                    $('.mesin-options').slideUp();
                 }
-            ]
-        });
+            });
 
-        // Filter by year
-        $('.filter-year').click(function(e) {
-            if (!$(e.target).hasClass('badge')) {
-                e.preventDefault();
+            // Set checkout modal data
+            $('.checkout-btn').click(function() {
+                var karyawanId = $(this).data('karyawan-id');
+                var karyawanNama = $(this).data('karyawan');
 
-                // Only apply filter if not clicking on collapse toggle
-                if (!$(this).data('toggle') || $(this).data('filter') === 'all') {
-                    $('.filter-year, .filter-month').removeClass('active');
-                    $(this).addClass('active');
+                $('#karyawan_id').val(karyawanId);
+                $('#karyawan_nama').val(karyawanNama);
+            });
 
-                    var filter = $(this).data('filter');
-
-                    if (filter === 'all') {
-                        // Tampilkan semua data
-                        table.search('').draw();
-                        $('#current-filter').text('Semua Absensi');
-                    } else {
-                        // Cari berdasarkan tahun
-                        table.search(filter).draw();
-                        $('#current-filter').text('Absensi Tahun ' + filter);
+            // Live data refresh
+            function refreshData() {
+                $.ajax({
+                    url: '{{ route('admin.absensis.getTodaySummary') }}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            // Update summary counters
+                            $('#total-count, #total-badge').text(response.data.total);
+                            $('#hadir-count').text(response.data.hadir);
+                            $('#terlambat-count').text(response.data.terlambat);
+                            $('#sakit-count').text(response.data.sakit);
+                            $('#cuti-izin-count').text(response.data.izin + response.data.cuti);
+                        }
                     }
-                }
+                });
+            }
+
+            // Real-time sync for attendance machines
+            let syncInterval;
+
+            $('#start-sync').click(function() {
+                $(this).prop('disabled', true);
+                $('#stop-sync').prop('disabled', false);
+                $('#sync-status').removeClass('d-none');
+
+                // Start the sync interval (every 30 seconds)
+                syncInterval = setInterval(fetchLatestData, 30000);
+
+                // Run it immediately
+                fetchLatestData();
+            });
+
+            $('#stop-sync').click(function() {
+                $(this).prop('disabled', true);
+                $('#start-sync').prop('disabled', false);
+                $('#sync-status').addClass('d-none');
+
+                // Clear the interval
+                clearInterval(syncInterval);
+            });
+
+            function fetchLatestData() {
+                $.ajax({
+                    url: '{{ route('admin.absensis.fetchLatestData') }}',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            $('#last-sync').text(new Date().toLocaleTimeString());
+
+                            // Update the sync results
+                            let resultHtml = '';
+                            response.data.forEach(function(item) {
+                                let statusClass = item.status === 'success' ? 'text-success' :
+                                    'text-muted';
+                                let statusIcon = item.status === 'success' ? 'check-circle' :
+                                    'info-circle';
+
+                                resultHtml +=
+                                    `<div class="${statusClass}"><i class="fas fa-${statusIcon} mr-1"></i> ${item.machine}: ${item.count} data baru</div>`;
+                            });
+
+                            $('#sync-results').html(resultHtml);
+
+                            // If we got new data, refresh the table data
+                            if (response.data.some(item => item.count > 0)) {
+                                refreshData();
+                            }
+                        }
+                    }
+                });
             }
         });
-
-        // Filter by month
-        $('.filter-month').click(function(e) {
-            e.preventDefault();
-
-            $('.filter-year, .filter-month').removeClass('active');
-            $(this).addClass('active');
-
-            var year = $(this).data('year');
-            var month = $(this).data('month');
-            var monthName = $(this).text().trim().split(' ')[0];
-
-            // Cari berdasarkan bulan dan tahun
-            table.search(month + '-' + year).draw();
-            $('#current-filter').text('Absensi ' + monthName + ' ' + year);
-        });
-
-        // Refresh button
-        $('#refreshBtn').click(function() {
-            $(this).find('i').addClass('fa-spin');
-            setTimeout(function() {
-                location.reload();
-            }, 500);
-        });
-    });
-</script>
+    </script>
 @stop

@@ -12,10 +12,60 @@ class UangTungguController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $uangTunggus = Uangtunggu::with('karyawan')->latest()->get();
-        return view('admin.uangtunggus.index', compact('uangTunggus'));
+        // Get filter parameters
+        $search = $request->get('search');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $karyawanId = $request->get('karyawan_id');
+        
+        // Build query with eager loading
+        $query = Uangtunggu::with('karyawan')->latest();
+        
+        // Apply search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->whereHas('karyawan', function($q) use ($search) {
+                    $q->where('nama_karyawan', 'like', "%{$search}%")
+                      ->orWhere('nik_karyawan', 'like', "%{$search}%");
+                })
+                ->orWhere('keterangan', 'like', "%{$search}%");
+            });
+        }
+        
+        // Apply date range filter for tanggal_mulai
+        if ($startDate) {
+            $query->whereDate('tanggal_mulai', '>=', $startDate);
+        }
+        
+        if ($endDate) {
+            $query->whereDate('tanggal_selesai', '<=', $endDate);
+        }
+        
+        // Apply karyawan filter
+        if ($karyawanId) {
+            $query->where('karyawan_id', $karyawanId);
+        }
+        
+        // Get counts for summary
+        $totalCount = Uangtunggu::count();
+        $activeCount = Uangtunggu::where('tanggal_selesai', '>=', now()->format('Y-m-d'))->count();
+        $expiredCount = Uangtunggu::where('tanggal_selesai', '<', now()->format('Y-m-d'))->count();
+        
+        // Paginate results
+        $uangTunggus = $query->paginate(15);
+        
+        // Get karyawan list for dropdown
+        $karyawans = Karyawan::orderBy('nama_karyawan')->get();
+        
+        return view('admin.uangtunggus.index', compact(
+            'uangTunggus', 
+            'karyawans',
+            'totalCount',
+            'activeCount',
+            'expiredCount'
+        ));
     }
 
     /**
@@ -37,6 +87,7 @@ class UangTungguController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'nominal' => 'required|numeric|min:0',
+            'keterangan' => 'nullable|string|max:255',
         ]);
 
         Uangtunggu::create($request->all());
@@ -73,6 +124,7 @@ class UangTungguController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'nominal' => 'required|numeric|min:0',
+            'keterangan' => 'nullable|string|max:255',
         ]);
 
         $uangtunggu->update($request->all());

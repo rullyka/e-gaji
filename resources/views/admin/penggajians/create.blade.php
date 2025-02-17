@@ -279,7 +279,9 @@
 
                     if (response.success) {
                         const karyawans = response.data;
-                        $('#totalKaryawan').text(response.count + ' karyawan');
+                        // Filter out employees who have resigned (tahun_keluar is not null)
+                        const activeKaryawans = karyawans.filter(k => !k.tahun_keluar);
+                        $('#totalKaryawan').text(activeKaryawans.length + ' karyawan');
 
                         // Tampilkan container karyawan
                         $('#karyawan-container').show();
@@ -292,7 +294,7 @@
                         const tableBody = $('#karyawanList');
                         tableBody.empty();
 
-                        if (karyawans.length === 0) {
+                        if (activeKaryawans.length === 0) {
                             tableBody.append(`
                                 <tr>
                                     <td colspan="9" class="text-center">Tidak ada karyawan yang belum diproses pada periode ini</td>
@@ -300,7 +302,7 @@
                             `);
                         } else {
                             // Populate table with karyawan data
-                            karyawans.forEach(function(karyawan) {
+                            activeKaryawans.forEach(function(karyawan) {
                                 const karyawanId = karyawan.id;
                                 const gajiPokok = karyawan.jabatan ? karyawan.jabatan.gaji_pokok : 0;
                                 const formattedGajiPokok = formatRupiah(gajiPokok);

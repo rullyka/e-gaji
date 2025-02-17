@@ -17,13 +17,66 @@ class CutiKaryawanController extends Controller
     /**
      * Menampilkan daftar semua pengajuan cuti karyawan
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua data cuti dengan relasi terkait dan urutkan dari yang terbaru
-        $cutiKaryawans = CutiKaryawan::with(['karyawan', 'masterCuti', 'supervisor', 'approver'])
-            ->orderBy('created_at', 'desc')
-            ->get();
-        return view('admin.cuti_karyawans.index', compact('cutiKaryawans'));
+        // Get filter parameters
+        $status = $request->get('status');
+        $search = $request->get('search');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+
+        // Build query with eager loading to reduce N+1 problem
+        $query = CutiKaryawan::with(['karyawan', 'masterCuti', 'supervisor', 'approver'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply status filter
+        if ($status && $status != 'all') {
+            $query->where('status_acc', $status);
+        }
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->whereHas('karyawan', function($q) use ($search) {
+                    $q->where('nama_karyawan', 'like', "%{$search}%")
+                      ->orWhere('nik_karyawan', 'like', "%{$search}%");
+                })
+                ->orWhereHas('masterCuti', function($q) use ($search) {
+                    $q->where('uraian', 'like', "%{$search}%");
+                })
+                ->orWhere('jenis_cuti', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply date range filter
+        if ($startDate) {
+            $query->whereDate('tanggal_mulai_cuti', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('tanggal_akhir_cuti', '<=', $endDate);
+        }
+
+        // Get counts for filter badges
+        $totalCount = CutiKaryawan::count();
+        $pendingCount = CutiKaryawan::where('status_acc', 'Menunggu Persetujuan')->count();
+        $approvedCount = CutiKaryawan::where('status_acc', 'Disetujui')->count();
+        $rejectedCount = CutiKaryawan::where('status_acc', 'Ditolak')->count();
+
+        // Paginate results
+        $cutiKaryawans = $query->paginate(15);
+
+        return view('admin.cuti_karyawans.index', compact(
+            'cutiKaryawans',
+            'status',
+            'search',
+            'startDate',
+            'endDate',
+            'totalCount',
+            'pendingCount',
+            'approvedCount',
+            'rejectedCount'
+        ));
     }
 
     /**
@@ -192,7 +245,7 @@ class CutiKaryawanController extends Controller
             'keterangan_tolak' => 'required_if:status_acc,Ditolak',
             'cuti_disetujui' => 'required_if:status_acc,Disetujui',
         ]);
-    
+
         // Get the authenticated user's karyawan record
         $karyawanId = null;
         $user = Auth::user();
@@ -203,7 +256,7 @@ class CutiKaryawanController extends Controller
                 $karyawanId = $karyawan->id;
             }
         }
-    
+
         // Update detail persetujuan
         $cutiKaryawan->status_acc = $request->status_acc;
         $cutiKaryawan->keterangan_tolak = $request->status_acc == 'Ditolak' ? $request->keterangan_tolak : null;
@@ -211,7 +264,7 @@ class CutiKaryawanController extends Controller
         $cutiKaryawan->tanggal_approval = now();
         $cutiKaryawan->approved_by = $karyawanId; // Use the karyawan ID instead of user ID
         $cutiKaryawan->save();
-    
+
         // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('cuti_karyawans.index')
             ->with('success', 'Pengajuan Cuti berhasil ' . strtolower($request->status_acc));

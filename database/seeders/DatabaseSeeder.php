@@ -18,7 +18,6 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             MenuSeeder::class,
             DepartemenSeeder::class,
-            BagianSeeder::class,
         ]);
     }
 }

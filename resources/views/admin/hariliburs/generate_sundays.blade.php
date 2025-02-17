@@ -58,15 +58,19 @@
                     Jika dicentang, semua Hari Minggu yang sudah ada untuk tahun tersebut akan dihapus dan dibuat ulang.
                     Jika tidak dicentang, hanya akan menambahkan Hari Minggu yang belum ada.
                 </small>
-                <!-- Tambahkan ini ke resources/views/admin/hariliburs/generate_sundays.blade.php -->
-
-                <div class="form-group">
+                
+                <!-- Remove these duplicate checkboxes -->
+                <!-- <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="create_attendance" name="create_attendance" value="1">
-                        <label class="custom-control-label" for="create_attendance">Buat Absensi Otomatis untuk Semua Karyawan</label>
+                        <input type="checkbox" class="custom-control-input" id="replace_existing" name="replace_existing">
+                        <label class="custom-control-label" for="replace_existing">Ganti hari Minggu yang sudah ada</label>
                     </div>
-                    <small class="form-text text-muted">Jika dicentang, sistem akan otomatis membuat absensi dengan status 'Libur' untuk semua karyawan aktif pada hari Minggu yang dibuat.</small>
                 </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="create_attendance" name="create_attendance" value="1">
+                    <label class="custom-control-label" for="create_attendance">Buat Absensi Otomatis untuk Semua Karyawan</label>
+                </div>
+                <small class="form-text text-muted">Jika dicentang, sistem akan otomatis membuat absensi dengan status 'Libur' untuk semua karyawan aktif pada hari Minggu yang dibuat.</small> -->
             </div>
             <div class="form-group">
                 <button type="submit" class="btn btn-primary">

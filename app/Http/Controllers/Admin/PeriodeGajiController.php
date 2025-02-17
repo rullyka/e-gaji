@@ -36,11 +36,11 @@ class PeriodeGajiController extends Controller
     {
         // Validasi input dari form
         $validator = Validator::make($request->all(), [
-            'nama_periode' => 'required|string|max:255',
-            'tanggal_mulai' => 'required|date',
+            'nama_periode'    => 'required|string|max:255',
+            'tanggal_mulai'   => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'status' => 'required|in:aktif,nonaktif',
-            'keterangan' => 'nullable|string',
+            'status'          => 'required|in:aktif,nonaktif',
+            'keterangan'      => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -85,11 +85,11 @@ class PeriodeGajiController extends Controller
     {
         // Validasi input dari form edit
         $validator = Validator::make($request->all(), [
-            'nama_periode' => 'required|string|max:255',
-            'tanggal_mulai' => 'required|date',
+            'nama_periode'    => 'required|string|max:255',
+            'tanggal_mulai'   => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'status' => 'required|in:aktif,nonaktif',
-            'keterangan' => 'nullable|string',
+            'status'          => 'required|in:aktif,nonaktif',
+            'keterangan'      => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -141,12 +141,26 @@ class PeriodeGajiController extends Controller
      */
     public function setActive(PeriodeGaji $periodegaji)
     {
-        // Menggunakan method di model untuk mengatur periode sebagai aktif
-        $periodegaji->setAsActive();
+        // Log untuk debugging
+        \Log::info('Attempting to activate period: ' . $periodegaji->nama_periode . ' (ID: ' . $periodegaji->id . ')');
 
-        // Redirect ke halaman index dengan pesan sukses
-        return redirect()->route('periodegaji.index')
-            ->with('success', 'Periode Gaji berhasil diaktifkan');
+        try {
+            // Menggunakan method di model untuk mengatur periode sebagai aktif
+            $periodegaji->setAsActive();
+
+            // Log success
+            \Log::info('Period activated successfully');
+
+            // Redirect ke halaman index dengan pesan sukses
+            return redirect()->route('periodegaji.index')
+                ->with('success', 'Periode Gaji berhasil diaktifkan');
+        } catch (\Exception $e) {
+            // Log error
+            \Log::error('Failed to activate period: ' . $e->getMessage());
+
+            return redirect()->route('periodegaji.index')
+                ->with('error', 'Gagal mengaktifkan periode: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -156,9 +170,9 @@ class PeriodeGajiController extends Controller
     {
         // Validasi input dari form
         $validator = Validator::make($request->all(), [
-            'year' => 'required|integer|min:2000|max:2100',
+            'year'      => 'required|integer|min:2000|max:2100',
             'start_day' => 'required|integer|min:1|max:28',
-            'end_day' => 'required',
+            'end_day'   => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -167,10 +181,10 @@ class PeriodeGajiController extends Controller
                 ->withInput();
         }
 
-        $year = $request->year;
+        $year     = $request->year;
         $startDay = $request->start_day;
-        $endDay = $request->end_day;
-        $count = 0;
+        $endDay   = $request->end_day;
+        $count    = 0;
 
         // Loop untuk setiap bulan dalam tahun
         for ($month = 1; $month <= 12; $month++) {
@@ -182,17 +196,18 @@ class PeriodeGajiController extends Controller
                 // Jika dipilih akhir bulan
                 $endDate = $startDate->copy()->endOfMonth();
             } else {
-                // Jika hari akhir yang dipilih kurang dari hari mulai, pindah ke bulan berikutnya
-                if ((int)$endDay < $startDay) {
+                // Jika hari akhir yang dipilih, selalu gunakan bulan berikutnya jika hari akhir <= hari mulai
+                if ((int)$endDay <= $startDay) {
                     $endMonth = $month < 12 ? $month + 1 : 1;
-                    $endYear = $month < 12 ? $year : $year + 1;
-                    $endDate = Carbon::createFromDate($endYear, $endMonth, (int)$endDay);
+                    $endYear  = $month < 12 ? $year : $year + 1;
+                    $endDate  = Carbon::createFromDate($endYear, $endMonth, (int)$endDay);
                 } else {
                     $endDate = Carbon::createFromDate($year, $month, (int)$endDay);
                 }
             }
 
-            $periodeName = 'Gaji Bulanan ' . $startDate->format('F Y');
+            // Format nama periode berdasarkan rentang tanggal, bukan hanya bulan
+            $periodeName = 'Gaji Bulanan ' . $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y');
 
             // Periksa apakah periode sudah ada
             $exists = PeriodeGaji::where('nama_periode', $periodeName)->exists();
@@ -200,11 +215,11 @@ class PeriodeGajiController extends Controller
             // Buat periode baru jika belum ada
             if (!$exists) {
                 PeriodeGaji::create([
-                    'nama_periode' => $periodeName,
-                    'tanggal_mulai' => $startDate->format('Y-m-d'),
+                    'nama_periode'    => $periodeName,
+                    'tanggal_mulai'   => $startDate->format('Y-m-d'),
                     'tanggal_selesai' => $endDate->format('Y-m-d'),
-                    'status' => 'nonaktif',
-                    'keterangan' => 'Periode gaji bulanan yang dibuat otomatis',
+                    'status'          => 'nonaktif',
+                    'keterangan'      => 'Periode gaji bulanan yang dibuat otomatis',
                 ]);
                 $count++;
             }
@@ -222,8 +237,8 @@ class PeriodeGajiController extends Controller
     {
         // Validasi input dari form
         $validator = Validator::make($request->all(), [
-            'year' => 'required|integer|min:2000|max:2100',
-            'month' => 'required|integer|min:1|max:12',
+            'year'              => 'required|integer|min:2000|max:2100',
+            'month'             => 'required|integer|min:1|max:12',
             'start_day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
         ]);
 
@@ -233,10 +248,10 @@ class PeriodeGajiController extends Controller
                 ->withInput();
         }
 
-        $year = $request->year;
-        $month = $request->month;
+        $year           = $request->year;
+        $month          = $request->month;
         $startDayOfWeek = $request->start_day_of_week;
-        $count = 0;
+        $count          = 0;
 
         // Dapatkan hari pertama bulan
         $firstDayOfMonth = Carbon::createFromDate($year, $month, 1);
@@ -254,7 +269,7 @@ class PeriodeGajiController extends Controller
         ) {
 
             $startDate = $currentDate->copy();
-            $endDate = $startDate->copy()->addDays(6); // Periode 7 hari (termasuk hari mulai)
+            $endDate   = $startDate->copy()->addDays(6);  // Periode 7 hari (termasuk hari mulai)
 
             $periodeName = 'Gaji Mingguan ' . $startDate->format('d') . ' - ' . $endDate->format('d M Y');
 
@@ -264,11 +279,11 @@ class PeriodeGajiController extends Controller
             // Buat periode baru jika belum ada
             if (!$exists) {
                 PeriodeGaji::create([
-                    'nama_periode' => $periodeName,
-                    'tanggal_mulai' => $startDate->format('Y-m-d'),
+                    'nama_periode'    => $periodeName,
+                    'tanggal_mulai'   => $startDate->format('Y-m-d'),
                     'tanggal_selesai' => $endDate->format('Y-m-d'),
-                    'status' => 'nonaktif',
-                    'keterangan' => 'Periode gaji mingguan yang dibuat otomatis',
+                    'status'          => 'nonaktif',
+                    'keterangan'      => 'Periode gaji mingguan yang dibuat otomatis',
                 ]);
                 $count++;
             }
@@ -326,5 +341,34 @@ class PeriodeGajiController extends Controller
         // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('periodegaji.index')
             ->with('success', 'Periode Gaji yang dipilih berhasil dihapus');
+    }
+
+    /**
+     * Mengatur periode yang dipilih sebagai aktif
+     */
+    public function setActiveMultiple(Request $request)
+    {
+        $ids = $request->ids;
+
+        // Periksa apakah ada periode yang dipilih
+        if (empty($ids) || count($ids) != 1) {
+            return redirect()->route('periodegaji.index')
+                ->with('error', 'Pilih tepat satu periode untuk diaktifkan');
+        }
+
+        // Ambil periode yang dipilih
+        $periode = PeriodeGaji::find($ids[0]);
+
+        if (!$periode) {
+            return redirect()->route('periodegaji.index')
+                ->with('error', 'Periode tidak ditemukan');
+        }
+
+        // Menggunakan method di model untuk mengatur periode sebagai aktif
+        $periode->setAsActive();
+
+        // Redirect ke halaman index dengan pesan sukses
+        return redirect()->route('periodegaji.index')
+            ->with('success', 'Periode Gaji berhasil diaktifkan');
     }
 }

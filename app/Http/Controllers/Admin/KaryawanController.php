@@ -10,13 +10,13 @@ use App\Models\Profesi;
 use App\Models\Karyawan;
 use App\Models\Departemen;
 use Illuminate\Support\Str;
+use App\Models\CutiKaryawan;
 use App\Models\ProgramStudi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use App\Models\CutiKaryawan;
 
 class KaryawanController extends Controller
 {
@@ -27,13 +27,61 @@ class KaryawanController extends Controller
     {
         $this->middleware('auth')->except(['getAllActive', 'search']); // Biarkan yang ini tanpa auth
     }
-    public function index()
-    {
-        $karyawans = Karyawan::with(['departemen', 'bagian', 'jabatan', 'profesi', 'programStudi'])
-            ->orderBy('nama_karyawan')
-            ->get();
-        return view('admin.karyawans.index', compact('karyawans'));
+    /**
+     * Menampilkan daftar karyawan
+     */
+    public function index(Request $request)
+{
+    $perPage = $request->input('per_page', 15);
+    $search = $request->input('search', '');
+    $filter = $request->input('filter', 'all');
+
+    // Get the base query
+    $query = Karyawan::with(['departemen', 'bagian', 'jabatan', 'profesi', 'programStudi']);
+
+    // Apply search if provided
+    if (!empty($search)) {
+        $query->where(function($q) use ($search) {
+            $q->where('nama_karyawan', 'LIKE', "%{$search}%")
+              ->orWhere('nik_karyawan', 'LIKE', "%{$search}%")
+              ->orWhere('no_hp', 'LIKE', "%{$search}%");
+        });
     }
+
+    // Apply filter if provided
+    if ($filter !== 'all') {
+        if ($filter === 'Resign') {
+            $query->whereNotNull('tahun_keluar');
+        } else {
+            $query->where('statuskaryawan', $filter)
+                  ->whereNull('tahun_keluar');
+        }
+    }
+
+    // Order by department name first, then by employee name
+    $query->join('departemens', 'karyawans.id_departemen', '=', 'departemens.id')
+          ->orderBy('departemens.name_departemen')
+          ->orderBy('karyawans.nama_karyawan');
+
+    // Get paginated results
+    $karyawans = $query->select('karyawans.*')->paginate($perPage);
+
+    // Get static counts for sidebar
+    $allCount = Karyawan::count();
+    $bulananCount = Karyawan::where('statuskaryawan', 'Bulanan')->whereNull('tahun_keluar')->count();
+    $harianCount = Karyawan::where('statuskaryawan', 'Harian')->whereNull('tahun_keluar')->count();
+    $boronganCount = Karyawan::where('statuskaryawan', 'Borongan')->whereNull('tahun_keluar')->count();
+    $resignCount = Karyawan::whereNotNull('tahun_keluar')->count();
+
+    return view('admin.karyawans.index', compact(
+        'karyawans',
+        'allCount',
+        'bulananCount',
+        'harianCount',
+        'boronganCount',
+        'resignCount'
+    ));
+}
 
     /**
      * Menampilkan form tambah karyawan
@@ -517,7 +565,7 @@ class KaryawanController extends Controller
                 ->with('success', 'Status karyawan berhasil diubah menjadi resign.');
         } catch (\Exception $e) {
             // Log the error for debugging purposes
-            \Log::error('Failed to update karyawan resign status: ' . $e->getMessage());
+            // Log::error('Failed to update karyawan resign status: ' . $e->getMessage());
 
             // Redirect back with the actual error message in the alert
             return redirect()->back()

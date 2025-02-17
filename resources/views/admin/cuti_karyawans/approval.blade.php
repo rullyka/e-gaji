@@ -3,205 +3,175 @@
 @section('title', 'Persetujuan Cuti Karyawan')
 
 @section('content_header')
-<div class="d-flex justify-content-between align-items-center">
-    <h1><i class="mr-2 fas fa-calendar-check text-primary"></i>Persetujuan Cuti Karyawan</h1>
-    <a href="{{ route('cuti_karyawans.index') }}" class="btn btn-secondary">
-        <i class="mr-1 fas fa-arrow-left"></i> Kembali
-    </a>
-</div>
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="text-dark"><i class="fas fa-calendar-check text-primary"></i> Persetujuan Cuti</h1>
+        <a href="{{ route('cuti_karyawans.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </a>
+    </div>
 @stop
 
 @section('content')
-<div class="card card-primary card-outline">
-    <div class="card-header">
-        <h3 class="card-title">Detail Pengajuan Cuti</h3>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>NIK Karyawan</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->karyawan->nik_karyawan }}</p>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row">
+                <!-- Employee Information -->
+                <div class="col-lg-4">
+                    <div class="p-3 bg-light rounded">
+                        <h5 class="border-bottom pb-2">Informasi Karyawan</h5>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Nama Karyawan</small>
+                            <strong>{{ $cutiKaryawan->karyawan->nama_karyawan }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">NIK</small>
+                            <strong>{{ $cutiKaryawan->karyawan->nik_karyawan }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Departemen</small>
+                            <strong>{{ $cutiKaryawan->karyawan->departemen->name_departemen ?? '-' }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Bagian</small>
+                            <strong>{{ $cutiKaryawan->karyawan->bagian->name_bagian ?? '-' }}</strong>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Nama Karyawan</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->karyawan->nama_karyawan }}</p>
+
+                <!-- Leave Details -->
+                <div class="col-lg-4">
+                    <div class="p-3 bg-light rounded">
+                        <h5 class="border-bottom pb-2">Detail Cuti</h5>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Jenis Cuti</small>
+                            <strong>{{ $cutiKaryawan->masterCuti->uraian ?? $cutiKaryawan->jenis_cuti }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Periode Cuti</small>
+                            <strong>{{ \Carbon\Carbon::parse($cutiKaryawan->tanggal_mulai_cuti)->format('d M Y') }} -
+                                {{ \Carbon\Carbon::parse($cutiKaryawan->tanggal_akhir_cuti)->format('d M Y') }}</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Jumlah Hari</small>
+                            <strong>{{ $cutiKaryawan->jumlah_hari_cuti }} hari</strong>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Status</small>
+                            @if ($cutiKaryawan->status_acc == 'Menunggu Persetujuan')
+                                <span class="badge badge-warning">Menunggu Persetujuan</span>
+                            @elseif($cutiKaryawan->status_acc == 'Disetujui')
+                                <span class="badge badge-success">Disetujui</span>
+                            @else
+                                <span class="badge badge-danger">Ditolak</span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Departemen</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->karyawan->departemen->name_departemen ?? '-' }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Bagian</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->karyawan->bagian->name_bagian ?? '-' }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Jenis Cuti</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->jenis_cuti }}</p>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="form-group">
-                    <label>Tanggal Mulai Cuti</label>
-                    <p class="form-control-static">{{ \Carbon\Carbon::parse($cutiKaryawan->tanggal_mulai_cuti)->format('d-m-Y') }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Akhir Cuti</label>
-                    <p class="form-control-static">{{ \Carbon\Carbon::parse($cutiKaryawan->tanggal_akhir_cuti)->format('d-m-Y') }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Jumlah Hari</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->jumlah_hari_cuti }} hari</p>
-                </div>
-                <div class="form-group">
-                    <label>Supervisor</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->supervisor->nama_karyawan ?? '-' }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Jenis Cuti</label>
-                    <p class="form-control-static">
-                        @if($cutiKaryawan->masterCuti)
-                            {{ $cutiKaryawan->masterCuti->uraian }}
+
+                <!-- Approval Section -->
+                <div class="col-lg-4">
+                    <div class="p-3 bg-light rounded">
+                        <h5 class="border-bottom pb-2">Persetujuan</h5>
+                        @if ($cutiKaryawan->status_acc == 'Menunggu Persetujuan')
+                            <form action="{{ route('cuti_karyawans.approve', $cutiKaryawan->id) }}" method="POST">
+                                @csrf
+                                <div class="form-group">
+                                    <select name="status_acc" id="status_acc" class="form-control form-control-sm">
+                                        <option value="">-- Pilih Keputusan --</option>
+                                        <option value="Disetujui">Disetujui</option>
+                                        <option value="Ditolak">Ditolak</option>
+                                    </select>
+                                </div>
+
+                                <div id="cuti_disetujui_group">
+                                    <div class="form-group">
+                                        <input type="number" name="cuti_disetujui" id="cuti_disetujui"
+                                            class="form-control form-control-sm" placeholder="Jumlah hari disetujui"
+                                            min="1" max="{{ $cutiKaryawan->jumlah_hari_cuti }}"
+                                            value="{{ $cutiKaryawan->jumlah_hari_cuti }}">
+                                    </div>
+                                </div>
+
+                                <div id="keterangan_tolak_group" style="display: none;">
+                                    <div class="form-group">
+                                        <textarea name="keterangan_tolak" id="keterangan_tolak" class="form-control form-control-sm" rows="3"
+                                            placeholder="Alasan penolakan"></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="fas fa-check-circle"></i> Simpan Keputusan
+                                </button>
+                            </form>
                         @else
-                            -
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Catatan</small>
+                                <strong>{{ $cutiKaryawan->keterangan_tolak ?? '-' }}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Disetujui/Ditolak Oleh</small>
+                                <strong>{{ $cutiKaryawan->approver->nama_karyawan ?? '-' }}</strong>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted d-block">Tanggal Keputusan</small>
+                                <strong>{{ $cutiKaryawan->tanggal_approval ? \Carbon\Carbon::parse($cutiKaryawan->tanggal_approval)->format('d M Y H:i') : '-' }}</strong>
+                            </div>
                         @endif
-                    </p>
+                    </div>
                 </div>
             </div>
+
+            @if ($cutiKaryawan->bukti || $cutiKaryawan->dokumen_pendukung)
+                <div class="mt-4">
+                    <h5 class="border-bottom pb-2">Dokumen Pendukung</h5>
+                    @if ($cutiKaryawan->bukti)
+                        <a href="{{ asset('storage/cuti/bukti/' . $cutiKaryawan->bukti) }}"
+                            class="btn btn-outline-info btn-sm" target="_blank">
+                            <i class="fas fa-file-download"></i> Lihat Dokumen
+                        </a>
+                    @else
+                        <a href="{{ asset('storage/cuti_karyawan/dokumen/' . $cutiKaryawan->dokumen_pendukung) }}"
+                            class="btn btn-outline-info btn-sm" target="_blank">
+                            <i class="fas fa-file-download"></i> Lihat Dokumen
+                        </a>
+                    @endif
+                </div>
+            @endif
         </div>
-
-        <div class="form-group">
-            <label>Bukti Pendukung</label>
-            <div>
-                @if($cutiKaryawan->bukti)
-                <a href="{{ asset('storage/cuti/bukti/' . $cutiKaryawan->bukti) }}"
-                   class="btn btn-sm btn-info" target="_blank">
-                    <i class="mr-1 fas fa-file-download"></i> Lihat Dokumen
-                </a>
-                @else
-                <a href="{{ asset('storage/cuti_karyawan/dokumen/' . $cutiKaryawan->dokumen_pendukung) }}"
-                   class="btn btn-sm btn-info" target="_blank">
-                    <i class="mr-1 fas fa-file-download"></i> Lihat Dokumen
-                </a>
-                </div>
-                </div>
-                @endif
-
-                <div class="form-group">
-                    <label>Status</label>
-                    <p class="form-control-static">
-                        @if($cutiKaryawan->status_acc == 'Menunggu Persetujuan')
-                        <span class="badge badge-warning">Menunggu Persetujuan</span>
-                        @elseif($cutiKaryawan->status_acc == 'Disetujui')
-                        <span class="badge badge-success">Disetujui</span>
-                        @elseif($cutiKaryawan->status_acc == 'Ditolak')
-                        <span class="badge badge-danger">Ditolak</span>
-                        @endif
-                    </p>
-                </div>
-
-                @if($cutiKaryawan->status_acc == 'Menunggu Persetujuan')
-                <form action="{{ route('cuti_karyawans.approve', $cutiKaryawan->id) }}" method="POST">
-                    @csrf
-                    <div class="form-group">
-                        <label for="status_acc">Status Persetujuan</label>
-                        <select name="status_acc" id="status_acc" class="form-control" required>
-                            <option value="">-- Pilih Status --</option>
-                            <option value="Disetujui">Disetujui</option>
-                            <option value="Ditolak">Ditolak</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" id="cuti_disetujui_group">
-                        <label for="cuti_disetujui">Jumlah Hari Disetujui</label>
-                        <input type="number" name="cuti_disetujui" id="cuti_disetujui" class="form-control"
-                               min="1" max="{{ $cutiKaryawan->jumlah_hari_cuti }}" value="{{ $cutiKaryawan->jumlah_hari_cuti }}">
-                    </div>
-
-                    <div class="form-group" id="keterangan_tolak_group" style="display: none;">
-                        <label for="keterangan_tolak">Alasan Penolakan</label>
-                        <textarea name="keterangan_tolak" id="keterangan_tolak" class="form-control" rows="3"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="mr-1 fas fa-save"></i> Simpan Keputusan
-                        </button>
-                    </div>
-                </form>
-                @else
-                <div class="form-group">
-                    <label>Catatan</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->keterangan_tolak ?? '-' }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Disetujui/Ditolak Oleh</label>
-                    <p class="form-control-static">{{ $cutiKaryawan->approver->nama_karyawan ?? '-' }}</p>
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Persetujuan</label>
-                    <p class="form-control-static">
-                        {{ $cutiKaryawan->tanggal_approval ? \Carbon\Carbon::parse($cutiKaryawan->tanggal_approval)->format('d-m-Y H:i') : '-' }}
-                    </p>
-                </div>
-                @endif
     </div>
-</div>
 @stop
 
 @section('css')
-<style>
-    .form-control-static {
-        font-weight: 500;
-        padding: 7px 12px;
-        background-color: #f8f9fa;
-        border-radius: 4px;
-        margin-bottom: 0;
-    }
-    .badge {
-        font-size: 90%;
-        padding: 0.4em 0.6em;
-    }
-</style>
-@stop
+    <style>
+        .card {
+            border: none;
+        }
 
-@section('js')
-<script>
-    $(document).ready(function() {
-        // Toggle fields based on approval status
-        $('#status_acc').change(function() {
-            if ($(this).val() == 'Disetujui') {
-                $('#cuti_disetujui_group').show();
-                $('#keterangan_tolak_group').hide();
-                $('#keterangan_tolak').removeAttr('required');
-                $('#cuti_disetujui').attr('required', 'required');
-            } else if ($(this).val() == 'Ditolak') {
-                $('#cuti_disetujui_group').hide();
-                $('#keterangan_tolak_group').show();
-                $('#cuti_disetujui').removeAttr('required');
-                $('#keterangan_tolak').attr('required', 'required');
-            } else {
-                $('#cuti_disetujui_group').hide();
-                $('#keterangan_tolak_group').hide();
-            }
-        });
+        .bg-light {
+            background-color: #f8f9fa !important;
+        }
 
-        // Trigger the change event on page load to set initial state
-        $('#status_acc').trigger('change');
-    });
-</script>
-@stop
+        small.text-muted {
+            font-size: 12px;
+        }
 
-@section('js')
-<script>
-    $(document).ready(function() {
-        // Confirm before rejecting
-        $('button[value="rejected"]').click(function(e) {
-            e.preventDefault();
-            if (confirm('Apakah Anda yakin ingin menolak pengajuan cuti ini?')) {
-                $(this).closest('form').submit();
-            }
-        });
-    });
-</script>
+        strong {
+            display: block;
+            margin-top: 4px;
+        }
+
+        .badge {
+            font-weight: 500;
+            padding: 5px 10px;
+        }
+
+        .form-control-sm {
+            height: calc(1.8125rem + 2px);
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            color: #fff;
+        }
+    </style>
 @stop

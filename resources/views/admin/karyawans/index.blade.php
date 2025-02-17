@@ -42,23 +42,23 @@
                 <div class="list-group list-group-flush">
                     <a href="#" class="list-group-item list-group-item-action active filter-category" data-filter="all">
                         <i class="mr-2 fas fa-users"></i> Semua
-                        <span class="float-right badge badge-light">{{ count($karyawans) }}</span>
+                        <span class="float-right badge badge-light">{{ $allCount }}</span>
                     </a>
                     <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Bulanan">
                         <i class="mr-2 fas fa-calendar-alt text-info"></i> Bulanan
-                        <span class="float-right badge badge-info">{{ $karyawans->where('statuskaryawan', 'Bulanan')->count() }}</span>
+                        <span class="float-right badge badge-info">{{ $bulananCount }}</span>
                     </a>
                     <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Harian">
                         <i class="mr-2 fas fa-calendar-day text-success"></i> Harian
-                        <span class="float-right badge badge-success">{{ $karyawans->where('statuskaryawan', 'Harian')->count() }}</span>
+                        <span class="float-right badge badge-success">{{ $harianCount }}</span>
                     </a>
-                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Borong">
+                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Borongan">
                         <i class="mr-2 fas fa-briefcase text-warning"></i> Borong
-                        <span class="float-right badge badge-warning">{{ $karyawans->where('statuskaryawan', 'Borongan')->count() }}</span>
+                        <span class="float-right badge badge-warning">{{ $boronganCount }}</span>
                     </a>
                     <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Resign">
                         <i class="mr-2 fas fa-user-slash text-danger"></i> Resign
-                        <span class="float-right badge badge-danger">{{ $karyawans->whereNotNull('tahun_keluar')->count() }}</span>
+                        <span class="float-right badge badge-danger">{{ $resignCount }}</span>
                     </a>
                 </div>
             </div>
@@ -86,76 +86,135 @@
                         </button>
                     </div>
                 </div>
-            </div>
-            <div class="p-0 card-body">
-                <div class="employee-container">
-                    @foreach($karyawans as $index => $karyawan)
-                    <div class="employee-item" data-status="{{ $karyawan->tahun_keluar ? 'Resign' : $karyawan->statuskaryawan }}">
-                        <div class="employee-item-checkbox">
-                            <div class="icheck-primary">
-                                <input type="checkbox" id="check{{ $karyawan->id }}">
-                                <label for="check{{ $karyawan->id }}"></label>
+                <!-- Add pagination controls at the bottom of the employee list -->
+                <div class="card-footer bg-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <div class="text-muted">
+                                Showing {{ $karyawans->firstItem() ?? 0 }} to {{ $karyawans->lastItem() ?? 0 }} of {{ $karyawans->total() }} entries
                             </div>
                         </div>
-                        <div class="employee-item-avatar">
-                            <img src="{{ $karyawan->foto_url }}" alt="{{ $karyawan->nama_karyawan }}" class="img-circle">
+                        <div class="col-md-4 text-center">
+                            <div class="d-flex justify-content-center">
+                                <nav aria-label="Page navigation">
+                                    {{ $karyawans->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-4') }}
+                                </nav>
+                            </div>
                         </div>
-                        <div class="employee-item-info">
-                            <div class="employee-name">{{ $karyawan->nama_karyawan }}</div>
-                            <div class="employee-nik">{{ $karyawan->nik_karyawan }}</div>
-                        </div>
-                        <div class="employee-item-department">
-                            <div>{{ $karyawan->departemen ? $karyawan->departemen->name_departemen : '-' }}</div>
-                            <div class="text-muted">{{ $karyawan->bagian ? $karyawan->bagian->name_bagian : '-' }}</div>
-                        </div>
-                        <div class="employee-item-position">
-                            <div>{{ $karyawan->jabatan ? $karyawan->jabatan->name_jabatan : '-' }}</div>
-                            <div class="text-muted">{{ $karyawan->profesi ? $karyawan->profesi->name_profesi : '-' }}</div>
-                        </div>
-                        <div class="employee-item-status">
-                            <span class="badge badge-{{
-                                $karyawan->tahun_keluar ? 'danger' :
-                                ($karyawan->statuskaryawan == 'Bulanan' ? 'info' :
-                                ($karyawan->statuskaryawan == 'Harian' ? 'success' :
-                                ($karyawan->statuskaryawan == 'Borongan' ? 'warning' : 'secondary')))
-                            }}">
-                                {{ $karyawan->tahun_keluar ? 'Resign' : $karyawan->statuskaryawan }}
-                            </span>
-                        </div>
-                        <div class="employee-item-date">
-                            <span>{{ $karyawan->tgl_awalmasuk }}</span>
-                        </div>
-                        <div class="employee-item-actions">
-                            <a href="{{ route('karyawans.show', $karyawan) }}" class="btn btn-sm btn-light" title="Lihat Detail">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            @can_show('karyawans.edit')
-                            @if(!$karyawan->tahun_keluar)
-                            <a href="{{ route('karyawans.edit', $karyawan) }}" class="btn btn-sm btn-light" title="Edit Karyawan">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="#" class="btn btn-sm btn-light resign-btn" data-id="{{ $karyawan->id }}" data-name="{{ $karyawan->nama_karyawan }}" title="Resign Karyawan">
-                                <i class="fas fa-user-slash text-danger"></i>
-                            </a>
-                            <form action="{{ route('karyawans.destroy', $karyawan) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-light" title="Hapus Karyawan" onclick="return confirm('Apakah Anda yakin ingin menghapus karyawan ini?')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                            @endif
-                            @endcan_show
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <span class="mr-2">Show</span>
+                                <select id="perPageSelect" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                    <option value="15" {{ request('per_page') == 15 ? 'selected' : '' }}>15</option>
+                                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                                </select>
+                                <span class="ml-2">entries</span>
+                            </div>
                         </div>
                     </div>
-                    @endforeach
-
-                    @if(count($karyawans) == 0)
-                    <div class="py-5 text-center">
-                        <p class="text-muted">Tidak ada karyawan yang ditemukan</p>
-                    </div>
-                    @endif
                 </div>
+            </div>
+            <div class="p-0 card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="40">#</th>
+                                <th width="60">Foto</th>
+                                <th>NIK</th>
+                                <th>Nama Karyawan</th>
+                                <th>Bagian</th>
+                                <th>Jabatan</th>
+                                <th width="100">Status</th>
+                                <th width="120">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $currentDepartemenName = null;
+                                $counter = 0;
+                            @endphp
+
+                            @foreach($karyawans as $index => $karyawan)
+                                @php
+                                    $departemenName = $karyawan->departemen ? $karyawan->departemen->name_departemen : 'Tanpa Departemen';
+                                @endphp
+
+                                @if($currentDepartemenName != $departemenName)
+                                    @php
+                                        $currentDepartemenName = $departemenName;
+                                        $counter = 0; // Reset counter for each department
+                                    @endphp
+                                    <tr class="department-header" id="dept-{{ Str::slug($departemenName) }}">
+                                        <td colspan="8" class="font-weight-bold bg-light">
+                                            {{ $departemenName }}
+                                        </td>
+                                    </tr>
+                                @endif
+                                <tr class="employee-row" data-department="{{ Str::slug($departemenName) }}">
+                                    <td>{{ ++$counter }}</td>
+                                    <td>
+                                        <img src="{{ $karyawan->foto_url }}" alt="{{ $karyawan->nama_karyawan }}">
+                                    </td>
+                                    <td>{{ $karyawan->nik_karyawan }}</td>
+
+                                    <td>
+                                        <div class="font-weight-bold">{{ $karyawan->nama_karyawan }}</div>
+                                        <small class="text-muted">
+                                            @if($karyawan->tahun_keluar)
+                                                Resign: {{ \Carbon\Carbon::parse($karyawan->tahun_keluar)->format('d/m/Y') }}
+                                            @else
+                                                Masuk: {{ \Carbon\Carbon::parse($karyawan->tgl_awalmasuk)->format('d/m/Y') }}
+                                            @endif
+                                        </small>
+                                    </td>
+                                    <td>{{ $karyawan->bagian ? $karyawan->bagian->name_bagian : '-' }}</td>
+                                    <td>{{ $karyawan->jabatan ? $karyawan->jabatan->name_jabatan : '-' }}</td>
+                                    <td>
+                                        <span class="badge badge-{{
+                                            $karyawan->tahun_keluar ? 'danger' :
+                                            ($karyawan->statuskaryawan == 'Bulanan' ? 'info' :
+                                            ($karyawan->statuskaryawan == 'Harian' ? 'success' :
+                                            ($karyawan->statuskaryawan == 'Borongan' ? 'warning' : 'secondary')))
+                                        }}">
+                                            {{ $karyawan->tahun_keluar ? 'Resign' : $karyawan->statuskaryawan }}
+                                        </span>
+                                    </td>
+                                    <td class="action-buttons">
+                                        <a href="{{ route('karyawans.show', $karyawan) }}" class="btn btn-sm btn-info" data-toggle="tooltip" title="Lihat Detail">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @can_show('karyawans.edit')
+                                        @if(!$karyawan->tahun_keluar)
+                                        <a href="{{ route('karyawans.edit', $karyawan) }}" class="btn btn-sm btn-warning" data-toggle="tooltip" title="Edit Karyawan">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-danger resign-btn" data-id="{{ $karyawan->id }}" data-name="{{ $karyawan->nama_karyawan }}" data-toggle="tooltip" title="Resign Karyawan">
+                                            <i class="fas fa-user-slash"></i>
+                                        </a>
+                                        <form action="{{ route('karyawans.destroy', $karyawan) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger" data-toggle="tooltip" title="Hapus Karyawan" onclick="return confirm('Apakah Anda yakin ingin menghapus karyawan ini?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        @endif
+                                        @endcan_show
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                @if(count($karyawans) == 0)
+                <div class="py-5 text-center">
+                    <p class="text-muted">Tidak ada karyawan yang ditemukan</p>
+                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -194,89 +253,73 @@
 
 @section('css')
 <style>
-    .employee-container {
-        border-top: 1px solid #e0e0e0;
-    }
-
-    .employee-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 15px;
-        border-bottom: 1px solid #e0e0e0;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-
-    .employee-item:hover {
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        z-index: 1;
+    /* Table styles */
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
         position: relative;
     }
 
-    .employee-item-checkbox {
-        width: 30px;
+    .table {
+        margin-bottom: 0;
+        border-collapse: collapse;
     }
 
-    .employee-item-avatar {
-        width: 50px;
-        text-align: center;
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        border-top: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        border-left: none;
+        border-right: none;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
 
-    .employee-item-avatar img {
+    .table td {
+        vertical-align: middle;
+        border-left: none;
+        border-right: none;
+        border-top: none;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .table tr:last-child td {
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .department-header {
+        width: 100%;
+    }
+
+    .department-header td {
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 14px;
+        color: #495057;
+        font-weight: bold;
+    }
+
+    .department-header.sticky {
+        position: sticky;
+        top: 53px; /* Height of the table header */
+        z-index: 9;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .department-header.sticky td {
+        background-color: #f0f0f0;
+    }
+
+    .table img {
         width: 40px;
         height: 40px;
         object-fit: cover;
         border: 1px solid #e0e0e0;
-    }
-
-    .employee-item-info {
-        width: 200px;
-        padding-right: 15px;
-    }
-
-    .employee-name {
-        font-weight: 600;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .employee-nik {
-        font-size: 0.85rem;
-        color: #5f6368;
-    }
-
-    .employee-item-department {
-        width: 180px;
-        padding-right: 15px;
-    }
-
-    .employee-item-position {
-        width: 180px;
-        padding-right: 15px;
-    }
-
-    .employee-item-status {
-        width: 100px;
-        text-align: center;
-    }
-
-    .employee-item-date {
-        width: 100px;
-        text-align: right;
-        color: #5f6368;
-        font-size: 0.85rem;
-    }
-
-    .employee-item-actions {
-        width: 120px;
-        text-align: right;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .employee-item:hover .employee-item-actions {
-        opacity: 1;
+        border-radius: 4px; /* Slightly rounded corners */
     }
 
     /* Left sidebar styles */
@@ -318,7 +361,7 @@
     .card {
         border-radius: 8px;
         border: 1px solid #dadce0;
-        box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        box-shadow: none;
         margin-bottom: 20px;
     }
 
@@ -345,69 +388,114 @@
         background-color: transparent;
     }
 
-    @media (max-width: 1200px) {
-        .employee-item-department, .employee-item-position {
-            width: 150px;
-        }
+    /* Action buttons */
+    .action-buttons .btn {
+        margin-right: 3px;
     }
 
-    @media (max-width: 992px) {
-        .employee-item-date {
-            width: 80px;
-        }
-
-        .employee-item-department, .employee-item-position {
-            width: 120px;
-        }
+    .action-buttons .btn:last-child {
+        margin-right: 0;
     }
 
-    @media (max-width: 768px) {
-        .employee-item {
-            flex-wrap: wrap;
-        }
-
-        .employee-item-info {
-            width: calc(100% - 80px);
-            order: 1;
-        }
-
-        .employee-item-checkbox {
-            order: 0;
-        }
-
-        .employee-item-avatar {
-            order: 2;
-        }
-
-        .employee-item-department, .employee-item-position {
-            width: 50%;
-            order: 3;
-            padding-left: 30px;
-            margin-top: 10px;
-        }
-
-        .employee-item-status, .employee-item-date {
-            width: 50%;
-            order: 4;
-            text-align: left;
-            padding-left: 30px;
-            margin-top: 5px;
-        }
-
-        .employee-item-actions {
-            width: 100%;
-            order: 5;
-            text-align: right;
-            margin-top: 10px;
-            opacity: 1;
-        }
+    /* Remove these styles as they're for vertical layout and hover effects
+    .action-text {
+        display: none;
+        margin-left: 3px;
+        font-size: 0.8rem;
     }
+
+    .action-btn:hover .action-text {
+        display: inline-block;
+    }
+
+    .btn-group-vertical {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .btn-group-vertical form {
+        margin-bottom: 3px;
+    }
+
+    .btn-group-vertical form:last-child {
+        margin-bottom: 0;
+    }
+    */
 </style>
 @stop
 
 @section('js')
 <script>
     $(function() {
+        // Initialize tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+
+        // Make department headers sticky - disabled as requested
+        function setupStickyHeaders() {
+            // Get table header height
+            const tableHeaderHeight = $('.table thead tr').outerHeight();
+
+            // Remove sticky behavior for department headers
+            $('.department-header').removeClass('sticky');
+
+            // No need for scroll event handling for department headers
+            /*
+            $(window).scroll(function() {
+                // Previous scroll handling code removed
+            });
+            */
+        }
+
+        // Initialize headers after page is fully loaded
+        $(window).on('load', function() {
+            setTimeout(setupStickyHeaders, 200);
+        });
+
+        // Handle search button click
+        $('#searchBtn').on('click', function() {
+            performSearch();
+        });
+
+        // Handle Enter key in search input
+        $('#searchInput').on('keypress', function(e) {
+            if (e.which === 13) {
+                performSearch();
+            }
+        });
+
+        // Handle per page change
+        $('#perPageSelect').on('change', function() {
+            const filter = $('.filter-category.active').data('filter') || 'all';
+            window.location.href = '{{ route("karyawans.index") }}?per_page=' + $(this).val() +
+                '&search=' + $('#searchInput').val() +
+                '&filter=' + filter;
+        });
+
+        // Set search input value from URL
+        $('#searchInput').val('{{ request("search") }}');
+
+        // Filter functionality using left sidebar
+        $('.filter-category').click(function(e) {
+            e.preventDefault();
+            $('.filter-category').removeClass('active');
+            $(this).addClass('active');
+
+            const filter = $(this).data('filter');
+            window.location.href = '{{ route("karyawans.index") }}?filter=' + filter +
+                '&search=' + $('#searchInput').val() +
+                '&per_page=' + $('#perPageSelect').val();
+        });
+
+        // Set active filter from URL
+        const urlFilter = '{{ request("filter", "all") }}';
+        $('.filter-category').removeClass('active');
+        $('.filter-category[data-filter="' + urlFilter + '"]').addClass('active');
+
+        // Refresh button
+        $('#refreshBtn').click(function() {
+            window.location.href = '{{ route("karyawans.index") }}';
+        });
+
         // Resign functionality
         $('.resign-btn').click(function(e) {
             e.preventDefault();
@@ -417,7 +505,6 @@
             var name = $(this).data('name');
 
             $('#resignEmployeeName').text(name);
-            // Use the proper route for the form action
             $('#resignForm').attr('action', '{{ route("karyawans.resign", "__ID__") }}'.replace('__ID__', id));
             $('#resignModal').modal('show');
         });
@@ -429,159 +516,14 @@
                 alert('Mohon lengkapi tanggal resign');
             }
         });
-    });
-</script>
-<script>
-    $(function() {
-        // Filter functionality using left sidebar
-        $('.filter-category').click(function(e) {
-            e.preventDefault();
-            $('.filter-category').removeClass('active');
-            $(this).addClass('active');
 
-            var filter = $(this).data('filter');
-
-            if (filter === 'all') {
-                $('.employee-item').show();
-            } else {
-                $('.employee-item').hide();
-                $('.employee-item[data-status="' + filter + '"]').show();
-            }
-
-            updateEmptyState();
-        });
-
-        // Search functionality
-        $('#searchInput').on('keyup', function() {
-            var value = $(this).val().toLowerCase();
-            var currentFilter = $('.filter-category.active').data('filter');
-
-            $('.employee-item').each(function() {
-                var text = $(this).text().toLowerCase();
-                var matchesSearch = text.indexOf(value) > -1;
-                var matchesFilter = currentFilter === 'all' || $(this).data('status') === currentFilter;
-
-                $(this).toggle(matchesSearch && matchesFilter);
-            });
-
-            updateEmptyState();
-        });
-
-        // Refresh button
-        $('#refreshBtn').click(function() {
-            $(this).find('i').addClass('fa-spin');
-            $('#searchInput').val('');
-            $('.filter-category[data-filter="all"]').click();
-
-            setTimeout(function() {
-                location.reload();
-            }, 500);
-        });
-
-        // Click on row to view details
-        $('.employee-item').click(function(e) {
-            if (!$(e.target).is('input[type="checkbox"]') &&
-                !$(e.target).is('button') &&
-                !$(e.target).is('a') &&
-                !$(e.target).is('i') &&
-                !$(e.target).closest('button').length &&
-                !$(e.target).closest('a').length) {
-                var detailUrl = $(this).find('a[title="Lihat Detail"]').attr('href');
-                if (detailUrl) {
-                    window.location.href = detailUrl;
-                }
-            }
-        });
-
-        // Prevent checkbox from triggering row click
-        $('.employee-item-checkbox input').click(function(e) {
-            e.stopPropagation();
-        });
-
-        // Function to show/hide empty state
-        function updateEmptyState() {
-            var visibleItems = $('.employee-item:visible').length;
-
-            if (visibleItems === 0) {
-                if ($('.empty-state').length === 0) {
-                    $('.employee-container').append(`
-                        <div class="py-5 text-center empty-state">
-                            <p class="text-muted">Tidak ada karyawan yang sesuai dengan filter</p>
-                        </div>
-                    `);
-                }
-            } else {
-                $('.empty-state').remove();
-            }
+        function performSearch() {
+            const filter = $('.filter-category.active').data('filter') || 'all';
+            window.location.href = '{{ route("karyawans.index") }}?search=' +
+                $('#searchInput').val() +
+                '&filter=' + filter +
+                '&per_page=' + $('#perPageSelect').val();
         }
-
-        // Initialize
-        $('.filter-category[data-filter="all"]').addClass('active');
-
-        // Add hover effect to rows
-        $('.employee-item').hover(
-            function() {
-                $(this).css('box-shadow', '0 1px 3px rgba(0,0,0,0.1)');
-                $(this).css('z-index', '1');
-                $(this).css('position', 'relative');
-            },
-            function() {
-                $(this).css('box-shadow', 'none');
-                $(this).css('z-index', 'auto');
-            }
-        );
-
-        // Keyboard shortcuts for navigation
-        $(document).keydown(function(e) {
-            // 'j' key - move down
-            if (e.keyCode === 74) {
-                var $visible = $('.employee-item:visible');
-                var $selected = $('.employee-item.selected');
-
-                if ($selected.length) {
-                    var index = $visible.index($selected);
-                    if (index < $visible.length - 1) {
-                        $selected.removeClass('selected');
-                        $visible.eq(index + 1).addClass('selected');
-                    }
-                } else {
-                    $visible.first().addClass('selected');
-                }
-
-                return false;
-            }
-
-            // 'k' key - move up
-            if (e.keyCode === 75) {
-                var $visible = $('.employee-item:visible');
-                var $selected = $('.employee-item.selected');
-
-                if ($selected.length) {
-                    var index = $visible.index($selected);
-                    if (index > 0) {
-                        $selected.removeClass('selected');
-                        $visible.eq(index - 1).addClass('selected');
-                    }
-                } else {
-                    $visible.first().addClass('selected');
-                }
-
-                return false;
-            }
-
-            // 'o' or Enter key - open selected
-            if (e.keyCode === 79 || e.keyCode === 13) {
-                var $selected = $('.employee-item.selected');
-                if ($selected.length) {
-                    var detailUrl = $selected.find('a[title="Lihat Detail"]').attr('href');
-                    if (detailUrl) {
-                        window.location.href = detailUrl;
-                    }
-                }
-
-                return false;
-            }
-        });
     });
 </script>
 @stop

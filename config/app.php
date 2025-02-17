@@ -83,7 +83,8 @@ return [
     |
     */
 
-    'locale' => 'en',
+    'locale' => 'id',
+    'timezone' => 'Asia/Jakarta',
 
     /*
     |--------------------------------------------------------------------------
@@ -199,6 +200,8 @@ return [
         App\Providers\PermissionServiceProvider::class,
 
         App\Providers\AttendanceServiceProvider::class,
+
+        Yajra\DataTables\DataTablesServiceProvider::class,
 
     ],
 

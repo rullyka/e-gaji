@@ -11,10 +11,34 @@ class DepartemenController extends Controller
     /**
      * Menampilkan daftar semua departemen
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua data departemen dan urutkan berdasarkan nama
-        $departemens = Departemen::orderBy('name_departemen')->get();
+        // Pagination dengan Laravel's built-in paginator
+        $perPage = $request->input('per_page', 15); // Default 15 items per page
+        $search = $request->input('search', '');
+
+        $query = Departemen::query()->orderBy('name_departemen');
+
+        // Apply search if provided
+        if (!empty($search)) {
+            $query->where('name_departemen', 'LIKE', "%{$search}%");
+        }
+
+        // Get paginated results
+        $departemens = $query->paginate($perPage);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'data' => $departemens->items(),
+                'pagination' => [
+                    'total' => $departemens->total(),
+                    'per_page' => $departemens->perPage(),
+                    'current_page' => $departemens->currentPage(),
+                    'last_page' => $departemens->lastPage(),
+                ]
+            ]);
+        }
+
         return view('admin.departemens.index', compact('departemens'));
     }
 

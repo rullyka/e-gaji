@@ -15,14 +15,64 @@ class LemburController extends Controller
     /**
      * Menampilkan daftar semua pengajuan lembur
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua data lembur dengan relasi terkait dan urutkan berdasarkan tanggal dibuat
-        $lemburs = Lembur::with(['karyawan', 'supervisor', 'approver'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Get filter parameters
+        $status = $request->get('status');
+        $search = $request->get('search');
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
 
-        return view('admin.lemburs.index', compact('lemburs'));
+        // Build query with eager loading to reduce N+1 problem
+        $query = Lembur::with(['karyawan', 'supervisor', 'approver'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply status filter
+        if ($status && $status != 'all') {
+            $query->where('status', $status);
+        }
+
+        // Apply search filter
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->whereHas('karyawan', function($q) use ($search) {
+                    $q->where('nama_karyawan', 'like', "%{$search}%")
+                      ->orWhere('nik_karyawan', 'like', "%{$search}%");
+                })
+                ->orWhere('jenis_lembur', 'like', "%{$search}%")
+                ->orWhere('keterangan', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply date range filter
+        if ($startDate) {
+            $query->whereDate('tanggal_lembur', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('tanggal_lembur', '<=', $endDate);
+        }
+
+        // Get counts for filter badges
+        $totalCount = Lembur::count();
+        $pendingCount = Lembur::where('status', 'Menunggu Persetujuan')->count();
+        $approvedCount = Lembur::where('status', 'Disetujui')->count();
+        $rejectedCount = Lembur::where('status', 'Ditolak')->count();
+
+        // Paginate results
+        $lemburs = $query->paginate(15);
+
+        return view('admin.lemburs.index', compact(
+            'lemburs',
+            'status',
+            'search',
+            'startDate',
+            'endDate',
+            'totalCount',
+            'pendingCount',
+            'approvedCount',
+            'rejectedCount'
+        ));
     }
 
     /**

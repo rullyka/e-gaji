@@ -61,7 +61,7 @@
 
     @php
         $years = $penggajians->groupBy(function($item) {
-            return $item->periodeGaji->tanggal_mulai->format('Y');
+            return $item->periodeGaji ? $item->periodeGaji->tanggal_mulai->format('Y') : 'Tidak Ada';
         });
 
         $currentYear = date('Y');
@@ -76,7 +76,7 @@
         <div id="months-{{ $year }}" class="collapse month-collapse {{ $year == $currentYear ? 'show' : '' }}">
             @php
                 $months = $items->groupBy(function($item) {
-                    return $item->periodeGaji->tanggal_mulai->format('m');
+                    return $item->periodeGaji ? $item->periodeGaji->tanggal_mulai->format('m') : 'Tidak Ada';
                 });
 
                 $monthNames = [
@@ -96,38 +96,38 @@
             @endphp
 
             @foreach($months as $month => $monthItems)
-                <a href="#" class="list-group-item list-group-item-action filter-month pl-5" 
+                <a href="#" class="list-group-item list-group-item-action filter-month pl-5"
                    data-year="{{ $year }}" data-month="{{ $month }}"
                    data-toggle="collapse" data-target="#departments-{{ $year }}-{{ $month }}">
-                    <i class="fas fa-calendar-day mr-2"></i> {{ $monthNames[$month] }}
+                    <i class="fas fa-calendar-day mr-2"></i> {{ isset($monthNames[$month]) ? $monthNames[$month] : $month }}
                     <span class="float-right badge badge-secondary">{{ count($monthItems) }}</span>
                 </a>
-                
+
                 <div id="departments-{{ $year }}-{{ $month }}" class="collapse department-collapse">
                     @php
                         $departments = $monthItems->groupBy(function($item) {
                             return $item->detail_departemen['departemen'] ?? 'Tidak Ada';
                         });
                     @endphp
-                    
+
                     @foreach($departments as $department => $deptItems)
-                        <a href="#" class="list-group-item list-group-item-action filter-department pl-5 ml-3" 
+                        <a href="#" class="list-group-item list-group-item-action filter-department pl-5 ml-3"
                            data-year="{{ $year }}" data-month="{{ $month }}" data-department="{{ $department }}"
                            data-toggle="collapse" data-target="#statuses-{{ $year }}-{{ $month }}-{{ Str::slug($department) }}">
                             <i class="fas fa-building mr-2"></i> {{ $department }}
                             <span class="float-right badge badge-secondary">{{ count($deptItems) }}</span>
                         </a>
-                        
+
                         <div id="statuses-{{ $year }}-{{ $month }}-{{ Str::slug($department) }}" class="collapse status-collapse">
                             @php
                                 $statuses = $deptItems->groupBy(function($item) {
                                     return $item->karyawan->statuskaryawan ?? 'Tidak Ada';
                                 });
                             @endphp
-                            
+
                             @foreach($statuses as $status => $statusItems)
-                                <a href="#" class="list-group-item list-group-item-action filter-status pl-5 ml-5" 
-                                   data-year="{{ $year }}" data-month="{{ $month }}" 
+                                <a href="#" class="list-group-item list-group-item-action filter-status pl-5 ml-5"
+                                   data-year="{{ $year }}" data-month="{{ $month }}"
                                    data-department="{{ $department }}" data-status="{{ $status }}">
                                     <i class="fas fa-user-tag mr-2"></i> {{ $status }}
                                     <span class="float-right badge badge-secondary">{{ count($statusItems) }}</span>
@@ -171,20 +171,20 @@
                         </thead>
                         <tbody>
                             @foreach($penggajians as $index => $penggajian)
-                            <tr data-year="{{ $penggajian->periodeGaji->tanggal_mulai->format('Y') }}"
-                                data-month="{{ $penggajian->periodeGaji->tanggal_mulai->format('m') }}"
+                            <tr data-year="{{ $penggajian->periodeGaji ? $penggajian->periodeGaji->tanggal_mulai->format('Y') : 'Tidak Ada' }}"
+                                data-month="{{ $penggajian->periodeGaji ? $penggajian->periodeGaji->tanggal_mulai->format('m') : 'Tidak Ada' }}"
                                 data-department="{{ $penggajian->detail_departemen['departemen'] ?? 'Tidak Ada' }}"
                                 data-status="{{ $penggajian->karyawan->statuskaryawan ?? 'Tidak Ada' }}">
                                 <td>{{ $index + 1 }}</td>
-                                <td>{{ $penggajian->periodeGaji->nama_periode }}</td>
-                                <td>{{ $penggajian->karyawan->nama }}</td>
+                                <td>{{ $penggajian->periodeGaji ? $penggajian->periodeGaji->nama_periode : 'Tidak Ada' }}</td>
+                                <td>{{ $penggajian->karyawan->nama_karyawan }}</td>
                                 <td>
                                     @php
                                         $departemen = $penggajian->detail_departemen['departemen'] ?? '-';
                                     @endphp
                                     {{ $departemen }}
                                 </td>
-                                
+
                                 <td>{{ $penggajian->formatCurrency($penggajian->gaji_bersih) }}</td>
                                 <td>
                                     <div class="btn-group">
@@ -254,104 +254,104 @@
                 // Show all rows
                 $('tr').show();
             });
-            
+
             // Filter by year - shows months for that year
             $('.filter-year').on('click', function(e) {
                 e.preventDefault();
-                
+
                 // Remove active class from all filters and add to this one
                 $('.filter-year, .filter-month, .filter-department, .filter-status, .filter-all').removeClass('active');
                 $(this).addClass('active');
-                
+
                 var year = $(this).data('filter');
-                
+
                 // Update filter title
                 $('#current-filter').text('Penggajian Tahun ' + year);
-                
+
                 // Show only rows with matching year
                 $('tr').show();
                 $('tbody tr').not('[data-year="' + year + '"]').hide();
-                
+
                 // Hide all other month, department, and status collapses
                 $('.month-collapse').not('#months-' + year).collapse('hide');
                 $('.department-collapse, .status-collapse').collapse('hide');
             });
-            
+
             // Filter by month - shows departments for that month
             $('.filter-month').on('click', function(e) {
                 e.preventDefault();
-                
+
                 // Remove active class from all filters and add to this one
                 $('.filter-year, .filter-month, .filter-department, .filter-status, .filter-all').removeClass('active');
                 $(this).addClass('active');
-                
+
                 var year = $(this).data('year');
                 var month = $(this).data('month');
-                
+
                 // Get month name for display
                 var monthNames = {
                     '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
                     '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
-                
+
                 // Update filter title
                 $('#current-filter').text('Penggajian ' + monthNames[month] + ' ' + year);
-                
+
                 // Show only rows with matching year and month
                 $('tr').show();
                 $('tbody tr').not('[data-year="' + year + '"][data-month="' + month + '"]').hide();
-                
+
                 // Show departments for this month
                 var monthId = year + '-' + month;
                 $('.department-collapse').not('#departments-' + monthId).collapse('hide');
                 $('#departments-' + monthId).collapse('show');
-                
+
                 // Hide all status collapses
                 $('.status-collapse').collapse('hide');
             });
-            
+
             // Filter by department - shows statuses for that department
             $('.filter-department').on('click', function(e) {
                 e.preventDefault();
-                
+
                 // Remove active class from all filters and add to this one
                 $('.filter-year, .filter-month, .filter-department, .filter-status, .filter-all').removeClass('active');
                 $(this).addClass('active');
-                
+
                 var year = $(this).data('year');
                 var month = $(this).data('month');
                 var department = $(this).data('department');
-                
+
                 // Update filter title
                 $('#current-filter').text('Penggajian Departemen ' + department);
-                
+
                 // Show only rows with matching year, month, and department
                 $('tr').show();
                 $('tbody tr').not('[data-year="' + year + '"][data-month="' + month + '"][data-department="' + department + '"]').hide();
-                
+
                 // Show statuses for this department
                 var deptId = year + '-' + month + '-' + department.replace(/\s+/g, '-').toLowerCase();
                 $('.status-collapse').not('#statuses-' + deptId).collapse('hide');
                 $('#statuses-' + deptId).collapse('show');
             });
-            
+
             // Filter by status
             $('.filter-status').on('click', function(e) {
                 e.preventDefault();
-                
+
                 // Remove active class from all filters and add to this one
                 $('.filter-year, .filter-month, .filter-department, .filter-status, .filter-all').removeClass('active');
                 $(this).addClass('active');
-                
+
                 var year = $(this).data('year');
                 var month = $(this).data('month');
                 var department = $(this).data('department');
                 var status = $(this).data('status');
-                
+
                 // Update filter title
                 $('#current-filter').text('Penggajian Status ' + status);
-                
+
                 // Show only rows with matching year, month, department, and status
                 $('tr').show();
                 $('tbody tr').not('[data-year="' + year + '"][data-month="' + month + '"][data-department="' + department + '"][data-status="' + status + '"]').hide();
