@@ -6,7 +6,6 @@ use Closure;
 use Illuminate\Http\Request;
 use App\Models\Menu;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class DynamicMenuMiddleware
 {
@@ -22,19 +21,14 @@ class DynamicMenuMiddleware
             // Force refresh menu jika ada parameter dalam request
             if ($request->has('refresh_menu')) {
                 Cache::forget($cacheKey);
-                Log::info('Menu cache cleared for user: ' . $userId);
             }
 
             $menuItems = Cache::remember($cacheKey, 60*24, function () use ($user) {
-                Log::info('Generating menu for user: ' . $user->id);
                 return $this->getMenuForUser($user);
             });
 
             // Set menu ke config AdminLTE
             config(['adminlte.menu' => $menuItems]);
-
-            // Log the menu for debugging
-            Log::info('Menu for user ' . $userId, ['menu' => $menuItems]);
         }
 
         return $next($request);
@@ -49,48 +43,18 @@ class DynamicMenuMiddleware
             ->get();
 
         $formattedMenu = [];
+        $lastHeaderIndex = -1;
 
         foreach ($menus as $menu) {
             // Untuk tipe header
             if ($menu->type === 'header') {
-                // Check if at least one child menu is accessible
-                $hasAccessibleChildren = false;
-
-                // Get direct children of this header
-                $childMenus = Menu::where('parent_id', $menu->id)
-                    ->orderBy('order')
-                    ->get();
-
-                // Also consider menu items that come after this header
-                $nextMenus = Menu::whereNull('parent_id')
-                    ->where('order', '>', $menu->order)
-                    ->where('type', '!=', 'header')
-                    ->orderBy('order')
-                    ->get();
-
-                // Combine both collections
-                $relevantMenus = $childMenus->merge($nextMenus);
-
-                foreach ($relevantMenus as $childMenu) {
-                    // Stop checking if we hit another header
-                    if ($childMenu->type === 'header' && is_null($childMenu->parent_id)) {
-                        break;
-                    }
-
-                    // Check if the user has permission to see this menu item
-                    if (!$childMenu->permission || $user->can($childMenu->permission)) {
-                        $hasAccessibleChildren = true;
-                        break;
-                    }
-                }
-
-                if ($hasAccessibleChildren) {
-                    $formattedMenu[] = ['header' => $menu->text];
-                }
+                // Simpan index header untuk pengecekan nanti
+                $lastHeaderIndex = count($formattedMenu);
+                $formattedMenu[] = ['header' => $menu->text, '_is_header' => true];
                 continue;
             }
 
-            // Skip if user doesn't have permission for this menu item
+            // Skip jika user tidak memiliki permission
             if ($menu->permission && !$user->can($menu->permission)) {
                 continue;
             }
@@ -106,7 +70,7 @@ class DynamicMenuMiddleware
                 $submenu = [];
 
                 foreach ($menu->children as $child) {
-                    // Skip if user doesn't have permission
+                    // Skip jika user tidak memiliki permission
                     if ($child->permission && !$user->can($child->permission)) {
                         continue;
                     }
@@ -119,7 +83,7 @@ class DynamicMenuMiddleware
                     $submenu[] = $childItem;
                 }
 
-                // Tambahkan submenu hanya jika ada item yang bisa diakses
+                // Tambahkan submenu hanya jika ada item
                 if (count($submenu) > 0) {
                     $item['submenu'] = $submenu;
                     $formattedMenu[] = $item;
@@ -129,6 +93,30 @@ class DynamicMenuMiddleware
             }
         }
 
-        return $formattedMenu;
+        // Bersihkan header yang tidak memiliki menu item setelahnya
+        $cleanedMenu = [];
+        $skipNext = false;
+
+        for ($i = 0; $i < count($formattedMenu); $i++) {
+            $item = $formattedMenu[$i];
+
+            // Jika ini adalah header
+            if (isset($item['_is_header']) && $item['_is_header']) {
+                // Periksa apakah ini adalah item terakhir atau item berikutnya juga header
+                if ($i == count($formattedMenu) - 1 ||
+                    (isset($formattedMenu[$i+1]['_is_header']) && $formattedMenu[$i+1]['_is_header'])) {
+                    // Skip header ini
+                    continue;
+                }
+
+                // Header ini memiliki item setelahnya, simpan dan hapus flag _is_header
+                unset($item['_is_header']);
+                $cleanedMenu[] = $item;
+            } else {
+                $cleanedMenu[] = $item;
+            }
+        }
+
+        return $cleanedMenu;
     }
 }

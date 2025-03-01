@@ -3,18 +3,18 @@
 @section('title', 'Permissions Management')
 
 @section('content_header')
-<h1>Permissions Management</h1>
+<div class="d-flex justify-content-between align-items-center">
+    <h1>Permissions List</h1>
+    <a href="{{ route('permissions.update-db') }}" class="btn btn-primary">
+        <i class="mr-1 fas fa-sync-alt"></i> Update to Database
+    </a>
+</div>
 @stop
 
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">Permissions List</h3>
-        <div class="card-tools">
-            <a href="{{ route('permissions.create') }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Add New Permission
-            </a>
-        </div>
+        <h3 class="card-title">System Permissions</h3>
     </div>
     <div class="card-body">
         @if(session('success'))
@@ -26,53 +26,60 @@
         </div>
         @endif
 
-        @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        @endif
-
-        @foreach($permissions as $module => $modulePermissions)
-        <div class="card card-outline card-primary mb-3">
-            <div class="card-header">
-                <h3 class="card-title">{{ ucfirst($module) }}</h3>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Permission Name</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($modulePermissions as $permission)
-                            <tr>
-                                <td>{{ $permission->name }}</td>
-                                <td style="width: 150px">
-                                    <a href="{{ route('permissions.edit', $permission) }}" class="btn btn-warning btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form action="{{ route('permissions.destroy', $permission) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
+        <div class="row">
+            @foreach($controllerPermissions as $module => $controller)
+            <div class="mb-4 col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="mr-2 fas fa-file-code text-primary"></i>{{ $controller['name'] }}
+                        </h5>
+                        <small class="text-muted">
+                            <code>{{ Str::after($controller['path'], base_path('/')) }}</code>
+                        </small>
+                    </div>
+                    <div class="p-0 card-body">
+                        <div class="list-group list-group-flush">
+                            @foreach($controller['permissions'] as $methodName => $permissionType)
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="mr-2 badge badge-info">{{ $methodName }}()</span>
+                                    <i class="fas fa-arrow-right text-muted"></i>
+                                </div>
+                                @if($permissionType == 'view')
+                                <span class="badge badge-success">{{ $module }}.{{ $permissionType }}</span>
+                                @elseif($permissionType == 'create')
+                                <span class="badge badge-primary">{{ $module }}.{{ $permissionType }}</span>
+                                @elseif($permissionType == 'edit')
+                                <span class="badge badge-warning">{{ $module }}.{{ $permissionType }}</span>
+                                @elseif($permissionType == 'delete')
+                                <span class="badge badge-danger">{{ $module }}.{{ $permissionType }}</span>
+                                @else
+                                <span class="badge badge-secondary">{{ $module }}.{{ $permissionType }}</span>
+                                @endif
+                            </div>
                             @endforeach
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
                 </div>
             </div>
+            @endforeach
         </div>
-        @endforeach
+    </div>
+    <div class="bg-white card-footer">
+        <small class="text-muted">
+            <i class="mr-1 fas fa-info-circle"></i>
+            Click "Update to Database" to save these permissions to the database for use in roles
+        </small>
     </div>
 </div>
+@stop
+
+@section('css')
+<style>
+    code {
+        font-size: 80%;
+    }
+
+</style>
 @stop

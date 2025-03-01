@@ -11,9 +11,11 @@
     <div class="card-header">
         <h3 class="card-title">Menu List</h3>
         <div class="card-tools">
+            @can_action
             <a href="{{ route('menu.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Add New Menu
             </a>
+            @endcan_action
         </div>
     </div>
     <div class="card-body">

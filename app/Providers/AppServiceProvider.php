@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\View\Components\ActionButton;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Blade::component('action-button', ActionButton::class);
         //
         if (auth()->check() && Schema::hasTable('menus')) {
             $menus = \App\Models\Menu::with('children')

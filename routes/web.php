@@ -76,6 +76,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
     });
 
+    Route::get('permissions/update-db', [PermissionController::class, 'updatePermissions'])
+    ->name('permissions.update-db');
+
     Route::middleware('permission.check:permissions.create')->group(function() {
         Route::get('permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
         Route::post('permissions', [PermissionController::class, 'store'])->name('permissions.store');
