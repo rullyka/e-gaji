@@ -24,21 +24,6 @@ class MenuServiceProvider extends ServiceProvider
         });
     }
 
-    // protected function generateMenu()
-    // {
-    //     try {
-    //         // Get menu items from database
-    //         $menus = Menu::with('children')
-    //             ->whereNull('parent_id')
-    //             ->orderBy('order')
-    //             ->get();
-
-    //         return $this->formatMenu($menus);
-    //     } catch (\Exception $e) {
-    //         // Return empty array if table doesn't exist (during migration)
-    //         return [];
-    //     }
-    // }
     protected function generateMenu()
 {
     try {

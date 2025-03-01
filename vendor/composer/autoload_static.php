@@ -39,6 +39,7 @@ class ComposerStaticInitbfe12996eeecb6fdc8713a9fd9d431f8
         '72b1e3f4a2af9b30b3f137b3ec2057fc' => __DIR__ . '/..' . '/spatie/laravel-activitylog/src/helpers.php',
         '320163ac6b93aebe3dc25b60a0533d56' => __DIR__ . '/..' . '/spatie/laravel-ignition/src/helpers.php',
         '377b22b161c09ed6e5152de788ca020a' => __DIR__ . '/..' . '/spatie/laravel-permission/src/helpers.php',
+        '00620ec3787303b77ee72cb3469bb395' => __DIR__ . '/../..' . '/app/Helpers/PermissionHelper.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -560,8 +561,11 @@ class ComposerStaticInitbfe12996eeecb6fdc8713a9fd9d431f8
     );
 
     public static $classMap = array (
+        'App\\Console\\Commands\\GeneratePermissions' => __DIR__ . '/../..' . '/app/Console/Commands/GeneratePermissions.php',
+        'App\\Console\\Commands\\ImplementPermissions' => __DIR__ . '/../..' . '/app/Console/Commands/ImplementPermissions.php',
         'App\\Console\\Kernel' => __DIR__ . '/../..' . '/app/Console/Kernel.php',
         'App\\Exceptions\\Handler' => __DIR__ . '/../..' . '/app/Exceptions/Handler.php',
+        'App\\Helpers\\PermissionHelper' => __DIR__ . '/../..' . '/app/Helpers/PermissionHelper.php',
         'App\\Http\\Controllers\\Admin\\MenuController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/MenuController.php',
         'App\\Http\\Controllers\\Admin\\PermissionController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/PermissionController.php',
         'App\\Http\\Controllers\\Admin\\RoleAccessController' => __DIR__ . '/../..' . '/app/Http/Controllers/Admin/RoleAccessController.php',
@@ -581,7 +585,10 @@ class ComposerStaticInitbfe12996eeecb6fdc8713a9fd9d431f8
         'App\\Http\\Controllers\\ProfileController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProfileController.php',
         'App\\Http\\Kernel' => __DIR__ . '/../..' . '/app/Http/Kernel.php',
         'App\\Http\\Middleware\\Authenticate' => __DIR__ . '/../..' . '/app/Http/Middleware/Authenticate.php',
+        'App\\Http\\Middleware\\CheckPermission' => __DIR__ . '/../..' . '/app/Http/Middleware/CheckPermission.php',
+        'App\\Http\\Middleware\\DynamicMenuMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/DynamicMenuMiddleware.php',
         'App\\Http\\Middleware\\EncryptCookies' => __DIR__ . '/../..' . '/app/Http/Middleware/EncryptCookies.php',
+        'App\\Http\\Middleware\\PermissionCheckMiddleware' => __DIR__ . '/../..' . '/app/Http/Middleware/PermissionCheckMiddleware.php',
         'App\\Http\\Middleware\\PreventRequestsDuringMaintenance' => __DIR__ . '/../..' . '/app/Http/Middleware/PreventRequestsDuringMaintenance.php',
         'App\\Http\\Middleware\\RedirectIfAuthenticated' => __DIR__ . '/../..' . '/app/Http/Middleware/RedirectIfAuthenticated.php',
         'App\\Http\\Middleware\\TrimStrings' => __DIR__ . '/../..' . '/app/Http/Middleware/TrimStrings.php',
@@ -598,9 +605,11 @@ class ComposerStaticInitbfe12996eeecb6fdc8713a9fd9d431f8
         'App\\Providers\\BroadcastServiceProvider' => __DIR__ . '/../..' . '/app/Providers/BroadcastServiceProvider.php',
         'App\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/app/Providers/EventServiceProvider.php',
         'App\\Providers\\MenuServiceProvider' => __DIR__ . '/../..' . '/app/Providers/MenuServiceProvider.php',
+        'App\\Providers\\PermissionServiceProvider' => __DIR__ . '/../..' . '/app/Providers/PermissionServiceProvider.php',
         'App\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/app/Providers/RouteServiceProvider.php',
         'App\\Services\\PermissionService' => __DIR__ . '/../..' . '/app/Services/PermissionService.php',
         'App\\Traits\\HasPermissionsTrait' => __DIR__ . '/../..' . '/app/Traits/HasPermissionsTrait.php',
+        'App\\View\\Components\\ActionButton' => __DIR__ . '/../..' . '/app/View/Components/ActionButton.php',
         'App\\View\\Components\\Adminlte\\Form\\Button' => __DIR__ . '/../..' . '/app/View/Components/Adminlte/Form/Button.php',
         'App\\View\\Components\\Adminlte\\Form\\DateRange' => __DIR__ . '/../..' . '/app/View/Components/Adminlte/Form/DateRange.php',
         'App\\View\\Components\\Adminlte\\Form\\Input' => __DIR__ . '/../..' . '/app/View/Components/Adminlte/Form/Input.php',
