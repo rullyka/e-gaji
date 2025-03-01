@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use App\Models\Menu;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class DynamicMenuMiddleware
 {
@@ -21,14 +22,19 @@ class DynamicMenuMiddleware
             // Force refresh menu jika ada parameter dalam request
             if ($request->has('refresh_menu')) {
                 Cache::forget($cacheKey);
+                Log::info('Menu cache cleared for user: ' . $userId);
             }
 
             $menuItems = Cache::remember($cacheKey, 60*24, function () use ($user) {
+                Log::info('Generating menu for user: ' . $user->id);
                 return $this->getMenuForUser($user);
             });
 
             // Set menu ke config AdminLTE
             config(['adminlte.menu' => $menuItems]);
+
+            // Log the menu for debugging
+            Log::info('Menu for user ' . $userId, ['menu' => $menuItems]);
         }
 
         return $next($request);
@@ -47,18 +53,31 @@ class DynamicMenuMiddleware
         foreach ($menus as $menu) {
             // Untuk tipe header
             if ($menu->type === 'header') {
-                // Periksa apakah ada menu item di bawah header ini yang dapat diakses
+                // Check if at least one child menu is accessible
                 $hasAccessibleChildren = false;
-                $childMenus = Menu::where(function($query) use ($menu) {
-                    $query->where('parent_id', $menu->id)
-                        ->orWhere(function($q) use ($menu) {
-                            $q->whereNull('parent_id')
-                                ->where('order', '>', $menu->order)
-                                ->where('type', '!=', 'header');
-                        });
-                })->get();
 
-                foreach ($childMenus as $childMenu) {
+                // Get direct children of this header
+                $childMenus = Menu::where('parent_id', $menu->id)
+                    ->orderBy('order')
+                    ->get();
+
+                // Also consider menu items that come after this header
+                $nextMenus = Menu::whereNull('parent_id')
+                    ->where('order', '>', $menu->order)
+                    ->where('type', '!=', 'header')
+                    ->orderBy('order')
+                    ->get();
+
+                // Combine both collections
+                $relevantMenus = $childMenus->merge($nextMenus);
+
+                foreach ($relevantMenus as $childMenu) {
+                    // Stop checking if we hit another header
+                    if ($childMenu->type === 'header' && is_null($childMenu->parent_id)) {
+                        break;
+                    }
+
+                    // Check if the user has permission to see this menu item
                     if (!$childMenu->permission || $user->can($childMenu->permission)) {
                         $hasAccessibleChildren = true;
                         break;
@@ -71,7 +90,7 @@ class DynamicMenuMiddleware
                 continue;
             }
 
-            // Skip jika user tidak memiliki permission
+            // Skip if user doesn't have permission for this menu item
             if ($menu->permission && !$user->can($menu->permission)) {
                 continue;
             }
@@ -87,7 +106,7 @@ class DynamicMenuMiddleware
                 $submenu = [];
 
                 foreach ($menu->children as $child) {
-                    // Skip jika user tidak memiliki permission
+                    // Skip if user doesn't have permission
                     if ($child->permission && !$user->can($child->permission)) {
                         continue;
                     }
@@ -100,7 +119,7 @@ class DynamicMenuMiddleware
                     $submenu[] = $childItem;
                 }
 
-                // Tambahkan submenu hanya jika ada item
+                // Tambahkan submenu hanya jika ada item yang bisa diakses
                 if (count($submenu) > 0) {
                     $item['submenu'] = $submenu;
                     $formattedMenu[] = $item;
