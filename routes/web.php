@@ -5,15 +5,19 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MenuController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\BagianController;
 use App\Http\Controllers\Admin\JabatanController;
 use App\Http\Controllers\Admin\ProfesiController;
 use App\Http\Controllers\Admin\KaryawanController;
 use App\Http\Controllers\Admin\HariliburController;
 use App\Http\Controllers\Admin\DepartemenController;
+use App\Http\Controllers\Admin\MastercutiController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleAccessController;
 use App\Http\Controllers\Admin\UserAccessController;
+use App\Http\Controllers\Admin\MastershiftController;
+use App\Http\Controllers\Admin\CutiKaryawanController;
 use App\Http\Controllers\Admin\ProgramStudiController;
 
 /*
@@ -158,6 +162,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::resource('jabatans', JabatanController::class);
     Route::resource('karyawans', KaryawanController::class);
     Route::get('/get-nik', [KaryawanController::class, 'get-nik'])->name('karyawans.get-nik');
+
+    Route::resource('mastercutis', MastercutiController::class);
+    Route::resource('shifts', ShiftController::class);
+    Route::resource('cuti_karyawans', CutiKaryawanController::class);
 });
 
 
