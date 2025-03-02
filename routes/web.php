@@ -1,13 +1,20 @@
 <?php
 
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\Admin\MenuController;
-use App\Http\Controllers\Admin\RoleAccessController;
-use App\Http\Controllers\Admin\UserAccessController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\MenuController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\BagianController;
+use App\Http\Controllers\Admin\JabatanController;
+use App\Http\Controllers\Admin\ProfesiController;
+use App\Http\Controllers\Admin\KaryawanController;
+use App\Http\Controllers\Admin\HariliburController;
+use App\Http\Controllers\Admin\DepartemenController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RoleAccessController;
+use App\Http\Controllers\Admin\UserAccessController;
+use App\Http\Controllers\Admin\ProgramStudiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -137,11 +144,22 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::resource('bagians', BagianController::class);
+    Route::resource('departemens', DepartemenController::class);
+    Route::resource('program_studis', ProgramStudiController::class);
+    Route::resource('hariliburs', HariliburController::class);
+    // Additional routes for generating Sundays
+    Route::get('hariliburs-generate-sundays', [HariliburController::class, 'generateSundaysForm'])
+        ->name('hariliburs.generate-sundays-form');
+    Route::post('hariliburs-generate-sundays', [HariliburController::class, 'generateSundays'])
+        ->name('hariliburs.generate-sundays');
+
+    Route::resource('profesis', ProfesiController::class);
+    Route::resource('jabatans', JabatanController::class);
+    Route::resource('karyawans', KaryawanController::class);
+    Route::get('/get-nik', [KaryawanController::class, 'get-nik'])->name('karyawans.get-nik');
 });
 
-// Debug route (consider removing in production)
-Route::get('/debug-menu', function () {
-    dd(config('adminlte.menu'));
-});
+
 
 require __DIR__.'/auth.php';

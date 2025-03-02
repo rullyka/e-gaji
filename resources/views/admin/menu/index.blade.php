@@ -11,11 +11,11 @@
     <div class="card-header">
         <h3 class="card-title">Menu List</h3>
         <div class="card-tools">
-            @can_action
+            @can_show('menu.create')
             <a href="{{ route('menu.create') }}" class="btn btn-primary btn-sm">
                 <i class="fas fa-plus"></i> Add New Menu
             </a>
-            @endcan_action
+            @endcan_show
         </div>
     </div>
     <div class="card-body">
@@ -48,7 +48,10 @@
                     <th>Parent</th>
                     <th>Permission</th>
                     <th>Order</th>
+                    @can_show('menu.create')
                     <th width="150">Action</th>
+                    @endcan_show
+
                 </tr>
             </thead>
             <tbody id="menuTableBody">
@@ -66,6 +69,7 @@
                     <td>{{ $menu->parent->text ?? '-' }}</td>
                     <td>{{ $menu->permission ?? '-' }}</td>
                     <td>{{ $menu->order }}</td>
+                    @can_show('menu.create')
                     <td>
                         <a href="{{ route('menu.edit', $menu) }}" class="btn btn-warning btn-sm">
                             <i class="fas fa-edit"></i>
@@ -78,6 +82,7 @@
                             </button>
                         </form>
                     </td>
+                    @endcan_show
                 </tr>
                 @endforeach
             </tbody>
