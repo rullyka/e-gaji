@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\BagianController;
+use App\Http\Controllers\Admin\LemburController;
+use App\Http\Controllers\Admin\AbsensiController;
 use App\Http\Controllers\Admin\JabatanController;
 use App\Http\Controllers\Admin\ProfesiController;
 use App\Http\Controllers\Admin\KaryawanController;
@@ -15,9 +17,12 @@ use App\Http\Controllers\Admin\DepartemenController;
 use App\Http\Controllers\Admin\MastercutiController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleAccessController;
+use App\Http\Controllers\Admin\UangTungguController;
 use App\Http\Controllers\Admin\UserAccessController;
+use App\Http\Controllers\Admin\JadwalkerjaController;
 use App\Http\Controllers\Admin\MastershiftController;
 use App\Http\Controllers\Admin\CutiKaryawanController;
+use App\Http\Controllers\Admin\MesinAbsensiController;
 use App\Http\Controllers\Admin\ProgramStudiController;
 
 /*
@@ -161,11 +166,66 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::resource('profesis', ProfesiController::class);
     Route::resource('jabatans', JabatanController::class);
     Route::resource('karyawans', KaryawanController::class);
-    Route::get('/get-nik', [KaryawanController::class, 'get-nik'])->name('karyawans.get-nik');
+    Route::get('/admin/karyawans/get-bagians/{id_departemen}', [KaryawanController::class, 'getBagiansByDepartemen'])
+    ->name('karyawans.get-bagians');
+
+    Route::get('/get-nik', [KaryawanController::class, 'getNik'])->name('karyawans.get-nik');
 
     Route::resource('mastercutis', MastercutiController::class);
     Route::resource('shifts', ShiftController::class);
     Route::resource('cuti_karyawans', CutiKaryawanController::class);
+
+    Route::resource('jadwalkerjas', JadwalkerjaController::class);
+    Route::get('jadwalkerjas/report', [JadwalkerjaController::class, 'report'])->name('jadwalkerjas.report');
+
+
+    Route::get('lemburs/{lembur}/approval', [LemburController::class, 'approvalForm'])
+        ->name('lemburs.approval');
+    Route::post('lemburs/{lembur}/approve', [LemburController::class, 'approve'])
+        ->name('lemburs.approve');
+    Route::resource('lemburs', LemburController::class);
+
+    Route::put('mesinabsensis/{mesinabsensi}/toggle-status', [MesinAbsensiController::class, 'toggleStatus'])
+        ->name('mesinabsensis.toggle-status');
+    Route::resource('mesinabsensis', MesinAbsensiController::class);
+    Route::resource('uangtunggus', UangTungguController::class);
+    Route::resource('absensis', AbsensiController::class);
+
+
+    Route::put('mesinabsensis/{mesinabsensi}/toggle-status', [MesinAbsensiController::class, 'toggleStatus'])
+        ->name('mesinabsensis.toggle-status');
+    Route::resource('mesinabsensis', MesinAbsensiController::class);
+    Route::resource('uangtunggus', UangTungguController::class);
+    Route::resource('mesinabsensis', MesinAbsensiController::class);
+
+    // Mesin Absensi - Test koneksi dan toggle status
+    Route::get('mesinabsensis/{mesinabsensi}/test-connection', [MesinAbsensiController::class, 'testConnection'])
+        ->name('mesinabsensis.test-connection');
+    Route::put('mesinabsensis/{mesinabsensi}/toggle-status', [MesinAbsensiController::class, 'toggleStatus'])
+        ->name('mesinabsensis.toggle-status');
+
+    // Mesin Absensi - Download logs
+    Route::get('mesinabsensis/{mesinabsensi}/download-logs', [MesinAbsensiController::class, 'downloadLogs'])
+        ->name('mesinabsensis.download-logs');
+    Route::get('mesinabsensis/download-logs-range', [MesinAbsensiController::class, 'downloadLogsRange'])
+        ->name('mesinabsensis.download-logs-range');
+    Route::get('mesinabsensis/download-logs-user', [MesinAbsensiController::class, 'downloadLogsUser'])
+        ->name('mesinabsensis.download-logs-user');
+    Route::post('mesinabsensis/{mesinabsensi}/process-logs', [MesinAbsensiController::class, 'processLogs'])
+        ->name('mesinabsensis.process-logs');
+
+    // Mesin Absensi - Upload names
+    Route::get('mesinabsensis/{mesinabsensi}/upload-names', [MesinAbsensiController::class, 'showUploadNames'])
+        ->name('mesinabsensis.upload-names');
+    Route::post('mesinabsensis/{mesinabsensi}/upload-names', [MesinAbsensiController::class, 'uploadNames'])
+        ->name('mesinabsensis.upload-names-store');
+    Route::post('mesinabsensis/{mesinabsensi}/upload-names-batch', [MesinAbsensiController::class, 'uploadNamesBatch'])
+        ->name('mesinabsensis.upload-names-batch');
+    Route::post('mesinabsensis/sync-all-users', [MesinAbsensiController::class, 'syncAllUsers'])
+        ->name('mesinabsensis.sync-all-users');
+
+    Route::get('karyawans/search', [KaryawanController::class, 'search'])
+        ->name('karyawans.search');
 });
 
 

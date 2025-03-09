@@ -2,9 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Bagian;
+use App\Models\Absensi;
+use App\Models\Jabatan;
+use App\Models\Profesi;
+use App\Models\Departemen;
+use App\Models\Uangtunggu;
+use App\Models\ProgramStudi;
+use App\Models\MesinAbsensi;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Karyawan extends Model
 {
@@ -101,5 +109,82 @@ class Karyawan extends Model
             return asset('storage/karyawan/ktp/' . $this->upload_ktp);
         }
         return null;
+    }
+
+    /**
+     * Get the absensis for the karyawan.
+     */
+    public function absensis()
+    {
+        return $this->hasMany(Absensi::class, 'karyawan_id');
+    }
+
+    /**
+     * Get the uang tunggus for the karyawan.
+     */
+    public function uangTunggus()
+    {
+        return $this->hasMany(Uangtunggu::class, 'karyawan_id');
+    }
+
+    /**
+     * Get all mesin absensi where this employee is registered
+     * This is done through the karyawan_mesinabsensi pivot table
+     */
+    public function mesinAbsensis()
+    {
+        return $this->belongsToMany(MesinAbsensi::class, 'karyawan_mesinabsensi', 'karyawan_id', 'mesinabsensi_id')
+                    ->withPivot('status_sync', 'sync_at')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Check if the employee is registered in the specific attendance machine
+     *
+     * @param MesinAbsensi|int $mesinAbsensi
+     * @return bool
+     */
+    public function isRegisteredInMachine($mesinAbsensi)
+    {
+        $mesinAbsensiId = $mesinAbsensi instanceof MesinAbsensi ? $mesinAbsensi->id : $mesinAbsensi;
+        return $this->mesinAbsensis()->where('mesinabsensi_id', $mesinAbsensiId)->exists();
+    }
+
+    /**
+     * Register employee to an attendance machine
+     *
+     * @param MesinAbsensi|int $mesinAbsensi
+     * @param bool $syncSuccess Status of synchronization (success/fail)
+     * @return bool
+     */
+    public function registerToMachine($mesinAbsensi, $syncSuccess = true)
+    {
+        $mesinAbsensiId = $mesinAbsensi instanceof MesinAbsensi ? $mesinAbsensi->id : $mesinAbsensi;
+
+        if ($this->isRegisteredInMachine($mesinAbsensiId)) {
+            // Update sync status if already registered
+            return $this->mesinAbsensis()->updateExistingPivot($mesinAbsensiId, [
+                'status_sync' => $syncSuccess,
+                'sync_at' => now()
+            ]);
+        } else {
+            // Create new registration
+            return $this->mesinAbsensis()->attach($mesinAbsensiId, [
+                'status_sync' => $syncSuccess,
+                'sync_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Unregister employee from an attendance machine
+     *
+     * @param MesinAbsensi|int $mesinAbsensi
+     * @return int
+     */
+    public function unregisterFromMachine($mesinAbsensi)
+    {
+        $mesinAbsensiId = $mesinAbsensi instanceof MesinAbsensi ? $mesinAbsensi->id : $mesinAbsensi;
+        return $this->mesinAbsensis()->detach($mesinAbsensiId);
     }
 }

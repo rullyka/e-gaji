@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use App\Models\Menu;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Artisan;
 
 class DynamicMenuMiddleware
 {
@@ -21,9 +22,35 @@ class DynamicMenuMiddleware
             // Force refresh menu jika ada parameter dalam request
             if ($request->has('refresh_menu')) {
                 Cache::forget($cacheKey);
+                // Jalankan optimize:clear untuk membersihkan cache aplikasi
+                Artisan::call('optimize:clear');
             }
 
-            $menuItems = Cache::remember($cacheKey, 60*24, function () use ($user) {
+            // Check if coming from menu update routes
+            $currentRoute = $request->route()->getName();
+            $menuRoutes = ['menu.store', 'menu.update', 'menu.destroy', 'menu.update-order'];
+
+            if (in_array($currentRoute, $menuRoutes)) {
+                // Clear menu cache for all users
+                $keys = Cache::get('menu_cache_keys', []);
+                foreach ($keys as $key) {
+                    Cache::forget($key);
+                }
+                Cache::forget('menu_cache_keys');
+
+                // Jalankan optimize:clear untuk membersihkan cache aplikasi
+                Artisan::call('optimize:clear');
+            }
+
+            $menuItems = Cache::remember($cacheKey, 60*24, function () use ($user, $userId) {
+                // Store cache key for future clearing
+                $cacheKeys = Cache::get('menu_cache_keys', []);
+                $cacheKey = "menu_user_{$userId}";
+                if (!in_array($cacheKey, $cacheKeys)) {
+                    $cacheKeys[] = $cacheKey;
+                    Cache::put('menu_cache_keys', $cacheKeys, 60*24*30); // Store for 30 days
+                }
+
                 return $this->getMenuForUser($user);
             });
 
@@ -50,7 +77,7 @@ class DynamicMenuMiddleware
             if ($menu->type === 'header') {
                 // Simpan index header untuk pengecekan nanti
                 $lastHeaderIndex = count($formattedMenu);
-                $formattedMenu[] = ['header' => $menu->text, '_is_header' => true];
+                $formattedMenu[] = ['header' => $menu->text];
                 continue;
             }
 
@@ -66,7 +93,7 @@ class DynamicMenuMiddleware
             if ($menu->route) $item['route'] = $menu->route;
 
             // Tambahkan submenu jika ada
-            if ($menu->children->count() > 0) {
+            if ($menu->children && $menu->children->count() > 0) {
                 $submenu = [];
 
                 foreach ($menu->children as $child) {
@@ -86,11 +113,10 @@ class DynamicMenuMiddleware
                 // Tambahkan submenu hanya jika ada item
                 if (count($submenu) > 0) {
                     $item['submenu'] = $submenu;
-                    $formattedMenu[] = $item;
                 }
-            } else {
-                $formattedMenu[] = $item;
             }
+
+            $formattedMenu[] = $item;
         }
 
         // Bersihkan header yang tidak memiliki menu item setelahnya
@@ -101,20 +127,16 @@ class DynamicMenuMiddleware
             $item = $formattedMenu[$i];
 
             // Jika ini adalah header
-            if (isset($item['_is_header']) && $item['_is_header']) {
+            if (isset($item['header'])) {
                 // Periksa apakah ini adalah item terakhir atau item berikutnya juga header
                 if ($i == count($formattedMenu) - 1 ||
-                    (isset($formattedMenu[$i+1]['_is_header']) && $formattedMenu[$i+1]['_is_header'])) {
+                    (isset($formattedMenu[$i+1]['header']))) {
                     // Skip header ini
                     continue;
                 }
-
-                // Header ini memiliki item setelahnya, simpan dan hapus flag _is_header
-                unset($item['_is_header']);
-                $cleanedMenu[] = $item;
-            } else {
-                $cleanedMenu[] = $item;
             }
+
+            $cleanedMenu[] = $item;
         }
 
         return $cleanedMenu;

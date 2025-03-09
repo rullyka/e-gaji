@@ -110,7 +110,7 @@ return [
     */
 
     'preloader' => [
-        'enabled' => true,
+        'enabled' => false,
         'mode' => 'fullscreen',
         'img' => [
             'path' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
@@ -299,6 +299,14 @@ return [
     */
 
     'menu' => [
+        ['header' => 'TEST'],
+    [
+        'text' => 'Test Parent',
+        'icon' => 'fas fa-cogs',
+        'submenu' => [
+            ['text' => 'Test Child', 'route' => 'admin.dashboard']
+        ]
+    ]
         // Navbar items:
 
         // [

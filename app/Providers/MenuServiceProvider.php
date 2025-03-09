@@ -87,44 +87,48 @@ class MenuServiceProvider extends ServiceProvider
     //     return $formattedMenu;
     // }
     protected function formatMenu($menus)
-{
-    $formattedMenu = [];
+    {
+        $formattedMenu = [];
 
-    foreach ($menus as $menu) {
-        // Untuk tipe header, gunakan format yang benar untuk AdminLTE
-        if ($menu->type === 'header') {
-            $formattedMenu[] = ['header' => $menu->text];
-            continue; // Skip ke item menu berikutnya
+        foreach ($menus as $menu) {
+            // Debug item
+            \Log::info('Processing menu:', ['menu' => $menu->toArray()]);
+
+            // Untuk tipe header, gunakan format yang benar untuk AdminLTE
+            if ($menu->type === 'header') {
+                $formattedMenu[] = ['header' => $menu->text];
+                continue; // Skip ke item menu berikutnya
+            }
+
+            // Format untuk menu item biasa
+            $menuItem = [
+                'text' => $menu->text
+            ];
+
+            // Add icon if exists
+            if ($menu->icon) {
+                $menuItem['icon'] = $menu->icon;
+            }
+
+            // Add route if exists
+            if ($menu->route) {
+                $menuItem['route'] = $menu->route;
+            }
+
+            // Add permission if exists
+            if ($menu->permission) {
+                $menuItem['can'] = $menu->permission;
+            }
+
+            // Add submenu if has children
+            if ($menu->children->count() > 0) {
+                \Log::info('Menu has children:', ['count' => $menu->children->count()]);
+                $menuItem['submenu'] = $this->formatMenu($menu->children);
+            }
+
+            $formattedMenu[] = $menuItem;
         }
 
-        // Format untuk menu item biasa
-        $menuItem = [
-            'text' => $menu->text
-        ];
-
-        // Add icon if exists
-        if ($menu->icon) {
-            $menuItem['icon'] = $menu->icon;
-        }
-
-        // Add route if exists
-        if ($menu->route) {
-            $menuItem['route'] = $menu->route;
-        }
-
-        // Add permission if exists
-        if ($menu->permission) {
-            $menuItem['can'] = $menu->permission;
-        }
-
-        // Add submenu if has children
-        if ($menu->children->count() > 0) {
-            $menuItem['submenu'] = $this->formatMenu($menu->children);
-        }
-
-        $formattedMenu[] = $menuItem;
+        return $formattedMenu;
     }
-
-    return $formattedMenu;
-}
 }

@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Bagian;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Departemen extends Model
 {
@@ -21,4 +22,9 @@ class Departemen extends Model
     {
         return $this->hasMany(Bagian::class, 'id_departemen');
     }
+    public function hasBagians()
+{
+    return $this->bagians()->count() > 0;
+}
+
 }

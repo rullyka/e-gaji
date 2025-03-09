@@ -34,7 +34,7 @@
             @csrf
             <div class="form-group">
                 <label for="name_profesi">Nama Profesi <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('name_profesi') is-invalid @enderror" id="name_profesi" name="name_profesi" value="{{ old('name_profesi') }}" required>
+                <input type="text" class="form-control @error('name_profesi') is-invalid @enderror" id="name_profesi" name="name_profesi" value="{{ old('name_profesi') }}" style="text-transform: uppercase;" required>
                 @error('name_profesi')
                 <div class="invalid-feedback">
                     {{ $message }}
@@ -47,7 +47,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" class="form-control rupiah @error('tunjangan_profesi') is-invalid @enderror" id="tunjangan_profesi" name="tunjangan_profesi" value="{{ old('tunjangan_profesi') }}" required>
+                    <input type="text" class="form-control rupiah @error('tunjangan_profesi') is-invalid @enderror" id="tunjangan_profesi" name="tunjangan_profesi" value="{{ old('tunjangan_profesi') }}">
                     @error('tunjangan_profesi')
                     <div class="invalid-feedback">
                         {{ $message }}

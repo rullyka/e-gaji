@@ -21,7 +21,7 @@
             @csrf
             <div class="form-group">
                 <label for="name_departemen">Nama Departemen</label>
-                <input type="text" class="form-control @error('name_departemen') is-invalid @enderror" id="name_departemen" name="name_departemen" value="{{ old('name_departemen') }}" required>
+                <input type="text" class="form-control @error('name_departemen') is-invalid @enderror" id="name_departemen" name="name_departemen" value="{{ old('name_departemen') }}" style="text-transform: uppercase;" required>
                 @error('name_departemen')
                 <div class="invalid-feedback">
                     {{ $message }}

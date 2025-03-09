@@ -69,6 +69,13 @@
                     </div>
 
                     <div class="form-group menu-item-field">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="has_submenu" name="has_submenu" value="1" {{ old('has_submenu') ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="has_submenu">This menu has submenu (parent menu)</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group menu-item-field">
                         <label for="permission">Permission</label>
                         <select class="form-control @error('permission') is-invalid @enderror" id="permission" name="permission">
                             <option value="">No Permission Required</option>
@@ -116,6 +123,16 @@
 
         $('#type').change(toggleMenuFields);
         toggleMenuFields();
+    });
+
+    $('#has_submenu').change(function() {
+        if ($(this).is(':checked')) {
+            $('#route').prop('required', false);
+            $('#route').closest('.form-group').find('label').text('Route (optional for parent menu)');
+        } else {
+            $('#route').prop('required', true);
+            $('#route').closest('.form-group').find('label').text('Route *');
+        }
     });
 
 </script>

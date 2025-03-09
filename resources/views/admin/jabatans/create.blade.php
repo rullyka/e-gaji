@@ -34,7 +34,7 @@
             @csrf
             <div class="form-group">
                 <label for="name_jabatan">Nama Jabatan <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('name_jabatan') is-invalid @enderror" id="name_jabatan" name="name_jabatan" value="{{ old('name_jabatan') }}" required>
+                <input type="text" class="form-control @error('name_jabatan') is-invalid @enderror" id="name_jabatan" name="name_jabatan" value="{{ old('name_jabatan') }}" style="text-transform: uppercase;" required>
                 @error('name_jabatan')
                 <div class="invalid-feedback">
                     {{ $message }}
@@ -47,7 +47,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" class="form-control rupiah @error('gaji_pokok') is-invalid @enderror" id="gaji_pokok" name="gaji_pokok" value="{{ old('gaji_pokok') }}" required>
+                    <input type="text" class="form-control rupiah @error('gaji_pokok') is-invalid @enderror" id="gaji_pokok" name="gaji_pokok" value="{{ old('gaji_pokok') }} required">
                     @error('gaji_pokok')
                     <div class="invalid-feedback">
                         {{ $message }}
@@ -62,7 +62,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" class="form-control rupiah @error('premi') is-invalid @enderror" id="premi" name="premi" value="{{ old('premi') }}" required>
+                    <input type="text" class="form-control rupiah @error('premi') is-invalid @enderror" id="premi" name="premi" value="{{ old('premi') }}">
                     @error('premi')
                     <div class="invalid-feedback">
                         {{ $message }}
@@ -77,7 +77,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" class="form-control rupiah @error('tunjangan_jabatan') is-invalid @enderror" id="tunjangan_jabatan" name="tunjangan_jabatan" value="{{ old('tunjangan_jabatan') }}" required>
+                    <input type="text" class="form-control rupiah @error('tunjangan_jabatan') is-invalid @enderror" id="tunjangan_jabatan" name="tunjangan_jabatan" value="{{ old('tunjangan_jabatan') }}">
                     @error('tunjangan_jabatan')
                     <div class="invalid-feedback">
                         {{ $message }}
@@ -92,7 +92,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" class="form-control rupiah @error('uang_lembur_biasa') is-invalid @enderror" id="uang_lembur_biasa" name="uang_lembur_biasa" value="{{ old('uang_lembur_biasa') }}" required>
+                    <input type="text" class="form-control rupiah @error('uang_lembur_biasa') is-invalid @enderror" id="uang_lembur_biasa" name="uang_lembur_biasa" value="{{ old('uang_lembur_biasa') }}">
                     @error('uang_lembur_biasa')
                     <div class="invalid-feedback">
                         {{ $message }}
@@ -107,7 +107,7 @@
                     <div class="input-group-prepend">
                         <span class="input-group-text">Rp</span>
                     </div>
-                    <input type="text" class="form-control rupiah @error('uang_lembur_libur') is-invalid @enderror" id="uang_lembur_libur" name="uang_lembur_libur" value="{{ old('uang_lembur_libur') }}" required>
+                    <input type="text" class="form-control rupiah @error('uang_lembur_libur') is-invalid @enderror" id="uang_lembur_libur" name="uang_lembur_libur" value="{{ old('uang_lembur_libur') }}">
                     @error('uang_lembur_libur')
                     <div class="invalid-feedback">
                         {{ $message }}

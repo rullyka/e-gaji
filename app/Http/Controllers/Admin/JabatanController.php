@@ -23,11 +23,11 @@ class JabatanController extends Controller
     {
         $request->validate([
             'name_jabatan' => 'required|string|max:255|unique:jabatans,name_jabatan',
-            'gaji_pokok' => 'required|numeric|min:0',
-            'premi' => 'required|numeric|min:0',
-            'tunjangan_jabatan' => 'required|numeric|min:0',
-            'uang_lembur_biasa' => 'required|numeric|min:0',
-            'uang_lembur_libur' => 'required|numeric|min:0',
+            'gaji_pokok' => 'numeric|min:0',
+            'premi' => 'numeric|min:0',
+            'tunjangan_jabatan' => 'numeric|min:0',
+            'uang_lembur_biasa' => 'numeric|min:0',
+            'uang_lembur_libur' => 'numeric|min:0',
         ]);
 
         // Clean the monetary values to store as integers

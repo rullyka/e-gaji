@@ -627,10 +627,8 @@
                 enableAnchorOnDoneStep: true // Enable/disable done steps navigation
             }
             , keyboardSettings: {
-                keyNavigation: true, // Enable/disable keyboard navigation
-                keyLeft: [37], // Left key code
-                keyRight: [39], // Right key code
-            }
+                keyNavigation: false
+            , }
             , lang: { // Language variables for button text
                 next: 'Selanjutnya'
                 , previous: 'Sebelumnya'
@@ -638,17 +636,41 @@
         });
 
         // Get NIK Karyawan via Ajax
+        // Improved AJAX call for refreshNik button with error handling and debugging
         $('#refreshNik').on('click', function() {
+            // Show a loading indicator or disable the button
+            $(this).prop('disabled', true);
+            $(this).find('i').addClass('fa-spin');
+
             $.ajax({
                 url: "{{ route('karyawans.get-nik') }}"
                 , type: "GET"
                 , dataType: "json"
+                , headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
                 , success: function(response) {
-                    $('#nik_karyawan').val(response.nik_karyawan);
+                    if (response && response.nik_karyawan) {
+                        $('#nik_karyawan').val(response.nik_karyawan);
+                        console.log("Successfully fetched new NIK:", response.nik_karyawan);
+                    } else {
+                        console.error("Response did not contain nik_karyawan:", response);
+                        alert("Format NIK tidak valid dari server. Harap hubungi administrator.");
+                    }
                 }
                 , error: function(xhr, status, error) {
-                    console.error("Error getting NIK Karyawan:", error);
-                    alert("Gagal mendapatkan NIK Karyawan baru. Silakan coba lagi.");
+                    // More detailed error logging
+                    console.error("Status code:", xhr.status);
+                    console.error("Error response:", xhr.responseText);
+                    console.error("Error status:", status);
+                    console.error("Error message:", error);
+
+                    alert("Gagal mendapatkan NIK Karyawan baru. Error: " + error);
+                }
+                , complete: function() {
+                    // Re-enable the button and stop spinner regardless of outcome
+                    $('#refreshNik').prop('disabled', false);
+                    $('#refreshNik').find('i').removeClass('fa-spin');
                 }
             });
         });

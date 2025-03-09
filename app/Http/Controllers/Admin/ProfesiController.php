@@ -23,20 +23,13 @@ class ProfesiController extends Controller
     {
         $request->validate([
             'name_profesi' => 'required|string|max:255|unique:profesis,name_profesi',
-            'tunjangan_profesi' => 'required|string|max:255',
+            'tunjangan_profesi' => 'numeric|min:0',
         ]);
 
         // Clean the currency format
-        $tunjangan = $request->tunjangan_profesi;
-
-        // Format the tunjangan properly if it doesn't have "Rp" prefix
-        if (strpos($tunjangan, 'Rp') === false) {
-            $tunjangan = 'Rp ' . $tunjangan;
-        }
-
         Profesi::create([
             'name_profesi' => $request->name_profesi,
-            'tunjangan_profesi' => $tunjangan
+            'tunjangan_profesi' => $request->tunjangan_profesi
         ]);
 
         return redirect()->route('profesis.index')
@@ -57,20 +50,11 @@ class ProfesiController extends Controller
     {
         $request->validate([
             'name_profesi' => 'required|string|max:255|unique:profesis,name_profesi,'.$profesi->id,
-            'tunjangan_profesi' => 'required|string|max:255',
+            'tunjangan_profesi' => 'required|numeric|min:0',
         ]);
-
-        // Clean the currency format
-        $tunjangan = $request->tunjangan_profesi;
-
-        // Format the tunjangan properly if it doesn't have "Rp" prefix
-        if (strpos($tunjangan, 'Rp') === false) {
-            $tunjangan = 'Rp ' . $tunjangan;
-        }
-
         $profesi->update([
             'name_profesi' => $request->name_profesi,
-            'tunjangan_profesi' => $tunjangan
+            'tunjangan_profesi' => $request->tunjangan_profesi
         ]);
 
         return redirect()->route('profesis.index')
@@ -89,5 +73,14 @@ class ProfesiController extends Controller
         $profesi->delete();
         return redirect()->route('profesis.index')
             ->with('success', 'Profesi berhasil dihapus');
+    }
+
+    private function cleanMoneyFormat($value)
+    {
+        // Remove any non-numeric characters except for the decimal point
+        $cleanValue = preg_replace('/[^0-9.]/', '', $value);
+
+        // Convert to integer (cents)
+        return (int) $cleanValue;
     }
 }

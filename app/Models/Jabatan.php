@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Karyawan;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Jabatan extends Model
 {
@@ -73,4 +74,8 @@ class Jabatan extends Model
     // {
     //     return $this->hasMany(Karyawan::class, 'jabatan_id');
     // }
+    public function karyawans()
+    {
+        return $this->hasMany(Karyawan::class, 'jabatan_id');
+    }
 }

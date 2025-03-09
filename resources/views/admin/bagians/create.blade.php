@@ -32,15 +32,7 @@
 
         <form action="{{ route('bagians.store') }}" method="POST">
             @csrf
-            <div class="form-group">
-                <label for="name_bagian">Nama Bagian <span class="text-danger">*</span></label>
-                <input type="text" class="form-control @error('name_bagian') is-invalid @enderror" id="name_bagian" name="name_bagian" value="{{ old('name_bagian') }}" required>
-                @error('name_bagian')
-                <div class="invalid-feedback">
-                    {{ $message }}
-                </div>
-                @enderror
-            </div>
+
             <div class="form-group">
                 <label for="id_departemen">Departemen</label>
                 <select class="form-control select2 @error('id_departemen') is-invalid @enderror" id="id_departemen" name="id_departemen" required>
@@ -52,6 +44,15 @@
                     @endforeach
                 </select>
                 @error('id_departemen')
+                <div class="invalid-feedback">
+                    {{ $message }}
+                </div>
+                @enderror
+            </div>
+            <div class="form-group">
+                <label for="name_bagian">Nama Bagian <span class="text-danger">*</span></label>
+                <input type="text" class="form-control @error('name_bagian') is-invalid @enderror" id="name_bagian" name="name_bagian" value="{{ old('name_bagian') }}" required>
+                @error('name_bagian')
                 <div class="invalid-feedback">
                     {{ $message }}
                 </div>
