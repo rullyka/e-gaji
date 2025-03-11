@@ -276,7 +276,7 @@
                                         </tr>
 
                                         <tr>
-                                            <th>Lembur</th>
+                                            <th>Tunjangan Lembur</th>
                                             <td>
                                                 <input type="hidden" name="tunjangan[2][nama]" value="Tunjangan Lembur">
                                                 <input type="number" name="tunjangan[2][nominal]" class="form-control tunjangan-item" value="{{ $dataAbsensi['total_lembur'] ?? 0 }}" min="0">
@@ -291,17 +291,21 @@
                                             </td>
                                         </tr>
 
-                                        <!-- Tunjangan Tambahan Dinamis -->
+                                        <!-- Tombol untuk menambah tunjangan dinamis -->
                                         <tr>
                                             <td colspan="2">
-                                                <button type="button" class="btn btn-sm btn-primary" id="btnTambahTunjangan">+ Tambah Tunjangan</button>
+                                                <button type="button" class="btn btn-sm btn-primary" id="btnTambahTunjangan">
+                                                    <i class="mr-1 fas fa-plus"></i> Tambah Tunjangan
+                                                </button>
                                             </td>
                                         </tr>
 
+                                        <!-- Container untuk tunjangan dinamis -->
                                         <tbody id="tunjangan-tambahan">
-                                            <!-- Tunjangan tambahan akan ditambahkan di sini -->
+                                            <!-- Tunjangan dinamis akan ditambahkan di sini -->
                                         </tbody>
 
+                                        <!-- Total Tunjangan -->
                                         <tr class="bg-success">
                                             <th>Total Tunjangan</th>
                                             <td>
@@ -362,12 +366,12 @@
                                             </td>
                                         </tr>
 
-                                        <!-- Potongan Tambahan -->
+                                        <!-- Potongan dari master -->
+                                        @if(isset($dataPotongan) && count($dataPotongan) > 0)
                                         <tr class="bg-light">
-                                            <th colspan="2" class="text-center">Potongan Tambahan</th>
+                                            <th colspan="2" class="text-center">Potongan Master</th>
                                         </tr>
 
-                                        @if(isset($dataPotongan) && count($dataPotongan) > 0)
                                         @foreach($dataPotongan as $index => $potongan)
                                         <tr>
                                             <th>{{ $potongan->nama_potongan }}</th>
@@ -379,17 +383,21 @@
                                         @endforeach
                                         @endif
 
-                                        <!-- Potongan Tambahan Dinamis -->
+                                        <!-- Tombol untuk menambah potongan dinamis -->
                                         <tr>
                                             <td colspan="2">
-                                                <button type="button" class="btn btn-sm btn-danger" id="btnTambahPotongan">+ Tambah Potongan</button>
+                                                <button type="button" class="btn btn-sm btn-danger" id="btnTambahPotongan">
+                                                    <i class="mr-1 fas fa-plus"></i> Tambah Potongan
+                                                </button>
                                             </td>
                                         </tr>
 
+                                        <!-- Container untuk potongan dinamis -->
                                         <tbody id="potongan-tambahan">
-                                            <!-- Potongan tambahan akan ditambahkan di sini -->
+                                            <!-- Potongan dinamis akan ditambahkan di sini -->
                                         </tbody>
 
+                                        <!-- Total Potongan -->
                                         <tr class="bg-danger">
                                             <th>Total Potongan</th>
                                             <td>
@@ -588,10 +596,21 @@
                     $('#gaji_bersih').val(gajiBersih);
 
                     // Format currency
-                    // Format currency
-                    $('#total_tunjangan_display').val(formatRupiah(totalTunjangan));
-                    $('#total_potongan_display').val(formatRupiah(totalPotongan));
-                    $('#display_gaji_pokok').text(formatRupiah(gajiPokok));
-                    $('#display_total_tunjangan').text(formatRupiah(totalTunjangan));
-                    $('#display_total_potongan').text(formatRupiah(totalPotongan));
-                    $('#gaji_bersih_display').text(formatRupiah(gajiBersih));
+            $('#total_tunjangan_display').val(formatRupiah(totalTunjangan));
+            $('#total_potongan_display').val(formatRupiah(totalPotongan));
+            $('#display_gaji_pokok').text(formatRupiah(gajiPokok));
+            $('#display_total_tunjangan').text(formatRupiah(totalTunjangan));
+            $('#display_total_potongan').text(formatRupiah(totalPotongan));
+            $('#gaji_bersih_display').text(formatRupiah(gajiBersih));
+        }
+
+        // Format currency ke Rupiah
+        function formatRupiah(angka) {
+            return 'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // Inisialisasi perhitungan total
+        hitungTotal();
+    });
+</script>
+@stop

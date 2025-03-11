@@ -459,6 +459,9 @@
                 const checkbox = $(`#karyawan_${selectedKaryawanId}`);
                 checkbox.prop('checked', true);
 
+                // Kosongkan semua checkbox lain
+                $('.karyawan-checkbox').not(`#karyawan_${selectedKaryawanId}`).prop('checked', false);
+
                 // Ubah action form ke route review
                 $('#createPenggajianForm').attr('action', "{{ route('penggajian.review') }}");
 
