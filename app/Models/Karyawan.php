@@ -8,6 +8,7 @@ use App\Models\Jabatan;
 use App\Models\Profesi;
 use App\Models\Departemen;
 use App\Models\Uangtunggu;
+use App\Models\Penggajian;
 use App\Models\ProgramStudi;
 use App\Models\MesinAbsensi;
 use Illuminate\Database\Eloquent\Model;
@@ -42,6 +43,7 @@ class Karyawan extends Model
         'ukuran_sepatu',
         'jml_anggotakk',
         'upload_ktp',
+        'status', // aktif, nonaktif, cuti
     ];
 
     protected $casts = [
@@ -87,6 +89,81 @@ class Karyawan extends Model
     public function programStudi()
     {
         return $this->belongsTo(ProgramStudi::class, 'id_programstudi');
+    }
+
+    /**
+     * Get the penggajians for the karyawan.
+     */
+    public function penggajians()
+    {
+        return $this->hasMany(Penggajian::class, 'id_karyawan', 'id');
+    }
+
+    /**
+     * Get tunjangans for this karyawan
+     */
+    public function tunjangans()
+    {
+        // Implementasi sesuai dengan struktur database
+        // Jika menggunakan model Tunjangan, maka:
+        // return $this->hasMany(Tunjangan::class, 'karyawan_id', 'id');
+
+        // Jika tidak ada model Tunjangan, maka bisa dibuat collection dari data jabatan/profesi
+        return collect([
+            [
+                'nama' => 'Tunjangan Jabatan',
+                'nominal' => $this->jabatan ? $this->jabatan->tunjangan_jabatan : 0
+            ],
+            [
+                'nama' => 'Tunjangan Profesi',
+                'nominal' => $this->profesi ? $this->profesi->tunjangan_profesi : 0
+            ]
+        ])->filter(function ($item) {
+            return $item['nominal'] > 0;
+        });
+    }
+
+    /**
+     * Check if karyawan has payroll data in the specified period
+     */
+    public function hasPayrollInPeriod($periodeId)
+    {
+        return $this->penggajians()
+            ->where('id_periode', $periodeId)
+            ->exists();
+    }
+
+    /**
+     * Calculate total salary amount (summing all periods)
+     */
+    public function getTotalSalaryAmount()
+    {
+        return $this->penggajians()->sum('gaji_bersih');
+    }
+
+    /**
+     * Get the full name
+     */
+    public function getNamaAttribute()
+    {
+        return $this->nama_karyawan;
+    }
+
+    /**
+     * Get status badge class
+     */
+    public function getStatusBadgeClassAttribute()
+    {
+        switch ($this->status) {
+            case 'aktif':
+                return 'badge-success';
+            case 'nonaktif':
+                return 'badge-danger';
+            case 'cuti':
+                return 'badge-warning';
+            default:
+                return 'badge-secondary';
+        }
     }
 
     /**
@@ -138,53 +215,27 @@ class Karyawan extends Model
                     ->withTimestamps();
     }
 
-    /**
-     * Check if the employee is registered in the specific attendance machine
-     *
-     * @param MesinAbsensi|int $mesinAbsensi
-     * @return bool
-     */
-    public function isRegisteredInMachine($mesinAbsensi)
+    // Scope untuk get karyawan dengan status aktif
+    public function scopeActive($query)
     {
-        $mesinAbsensiId = $mesinAbsensi instanceof MesinAbsensi ? $mesinAbsensi->id : $mesinAbsensi;
-        return $this->mesinAbsensis()->where('mesinabsensi_id', $mesinAbsensiId)->exists();
+        return $query->where('status', 'aktif');
     }
 
-    /**
-     * Register employee to an attendance machine
-     *
-     * @param MesinAbsensi|int $mesinAbsensi
-     * @param bool $syncSuccess Status of synchronization (success/fail)
-     * @return bool
-     */
-    public function registerToMachine($mesinAbsensi, $syncSuccess = true)
+    // Scope untuk get karyawan dengan status nonaktif
+    public function scopeInactive($query)
     {
-        $mesinAbsensiId = $mesinAbsensi instanceof MesinAbsensi ? $mesinAbsensi->id : $mesinAbsensi;
-
-        if ($this->isRegisteredInMachine($mesinAbsensiId)) {
-            // Update sync status if already registered
-            return $this->mesinAbsensis()->updateExistingPivot($mesinAbsensiId, [
-                'status_sync' => $syncSuccess,
-                'sync_at' => now()
-            ]);
-        } else {
-            // Create new registration
-            return $this->mesinAbsensis()->attach($mesinAbsensiId, [
-                'status_sync' => $syncSuccess,
-                'sync_at' => now()
-            ]);
-        }
+        return $query->where('status', 'nonaktif');
     }
 
-    /**
-     * Unregister employee from an attendance machine
-     *
-     * @param MesinAbsensi|int $mesinAbsensi
-     * @return int
-     */
-    public function unregisterFromMachine($mesinAbsensi)
+    // Scope untuk get karyawan dengan status cuti
+    public function scopeOnLeave($query)
     {
-        $mesinAbsensiId = $mesinAbsensi instanceof MesinAbsensi ? $mesinAbsensi->id : $mesinAbsensi;
-        return $this->mesinAbsensis()->detach($mesinAbsensiId);
+        return $query->where('status', 'cuti');
+    }
+
+    // Scope untuk get karyawan dari departemen tertentu
+    public function scopeByDepartment($query, $departemenId)
+    {
+        return $query->where('id_departemen', $departemenId);
     }
 }

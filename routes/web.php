@@ -265,13 +265,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::put('/periodegaji/{periodegaji}/set-active', [PeriodeGajiController::class, 'setActive'])->name('periodegaji.set-active');
 
 
-    Route::get('penggajian', [PenggajianController::class, 'index'])->name('penggajian.index');
-    Route::get('penggajian/create', [PenggajianController::class, 'create'])->name('penggajian.create');
-    Route::post('penggajian', [PenggajianController::class, 'store'])->name('penggajian.store');
-    Route::get('penggajian/{penggajian}', [PenggajianController::class, 'show'])->name('penggajian.show');
-    Route::get('penggajian/{penggajian}/edit', [PenggajianController::class, 'edit'])->name('penggajian.edit');
-    Route::put('penggajian/{penggajian}', [PenggajianController::class, 'update'])->name('penggajian.update');
-    Route::delete('penggajian/{penggajian}', [PenggajianController::class, 'destroy'])->name('penggajian.destroy');
+    Route::resource('penggajian', PenggajianController::class);
 
     // Additional routes for payroll functionality
     Route::post('penggajian/get-filtered-karyawans', [PenggajianController::class, 'getFilteredKaryawans'])->name('penggajian.getFilteredKaryawans');

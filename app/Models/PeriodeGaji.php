@@ -24,24 +24,56 @@ class PeriodeGaji extends Model
         'tanggal_selesai' => 'date',
     ];
 
-    // Relationship with penggajian if needed
-    public function penggajian()
+    // Relationship with penggajian
+    public function penggajians()
     {
-        return $this->hasMany(Penggajian::class, 'periode_id');
+        return $this->hasMany(Penggajian::class, 'id_periode', 'id');
     }
 
     // Check if this period has any associated payroll data
-    /**
-     * Check if this period has payroll data
-     */
     public function hasPayrollData()
     {
-        // Implement this based on your relationships
-        // For example, if you have a Payroll model with a periode_gaji_id column:
-        // return $this->payrolls()->exists();
+        return $this->penggajians()->exists();
+    }
 
-        // Temporary implementation (replace with actual check)
-        return false;
+    // Get total karyawan yang sudah diproses untuk periode ini
+    public function getKaryawanProcessedCountAttribute()
+    {
+        return $this->penggajians()->count();
+    }
+
+    // Get total gaji bersih untuk periode ini
+    public function getTotalGajiBersihAttribute()
+    {
+        return $this->penggajians()->sum('gaji_bersih');
+    }
+
+    // Format tanggal mulai
+    public function getTanggalMulaiFormattedAttribute()
+    {
+        return $this->tanggal_mulai ? $this->tanggal_mulai->format('d-m-Y') : '-';
+    }
+
+    // Format tanggal selesai
+    public function getTanggalSelesaiFormattedAttribute()
+    {
+        return $this->tanggal_selesai ? $this->tanggal_selesai->format('d-m-Y') : '-';
+    }
+
+    // Get duration in days
+    public function getDurationDaysAttribute()
+    {
+        if (!$this->tanggal_mulai || !$this->tanggal_selesai) {
+            return 0;
+        }
+
+        return $this->tanggal_mulai->diffInDays($this->tanggal_selesai) + 1;
+    }
+
+    // Get badge class based on status
+    public function getStatusBadgeClassAttribute()
+    {
+        return $this->status === 'aktif' ? 'badge-success' : 'badge-secondary';
     }
 
     /**
