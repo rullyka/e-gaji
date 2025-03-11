@@ -1,9 +1,9 @@
 @extends('adminlte::page')
 
-@section('title', 'Review Penggajian')
+@section('title', 'Tambah Data Penggajian')
 
 @section('content_header')
-<h1>Review Penggajian</h1>
+<h1>Tambah Data Penggajian</h1>
 @stop
 
 @section('content')
@@ -11,431 +11,203 @@
     <div class="col-md-12">
         <div class="card card-primary card-outline">
             <div class="card-header">
-                <h3 class="card-title">Data Penggajian</h3>
+                <h3 class="card-title">Form Filter Karyawan</h3>
                 <div class="card-tools">
-                    <a href="{{ route('penggajian.create') }}" class="btn btn-sm btn-default">
+                    <a href="{{ route('penggajian.index') }}" class="btn btn-sm btn-default">
                         <i class="mr-1 fas fa-arrow-left"></i> Kembali
                     </a>
                 </div>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card card-outline card-info">
-                            <div class="card-header">
-                                <h3 class="card-title">Data Karyawan</h3>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="mb-3 text-center col-md-4">
-                                        <img src="{{ $karyawan->foto_karyawan }}" alt="Foto {{ $karyawan->nama_karyawan }}" class="rounded img-fluid" style="max-height: 150px;">
-                                    </div>
-                                    <div class="col-md-8">
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Nama</th>
-                                                <td>{{ $karyawan->nama_karyawan }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>NIK</th>
-                                                <td>{{ $karyawan->nik ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Departemen</th>
-                                                <td>{{ $karyawan->departemen->name_departemen ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Bagian</th>
-                                                <td>{{ $karyawan->bagian->name_bagian ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Jabatan</th>
-                                                <td>{{ $karyawan->jabatan->name_jabatan ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Profesi</th>
-                                                <td>{{ $karyawan->profesi->name_profesi ?? '-' }}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Status</th>
-                                                <td>
-                                                    <span class="badge badge-{{ $karyawan->status == 'aktif' ? 'success' : ($karyawan->status == 'nonaktif' ? 'danger' : 'warning') }}">
-                                                        {{ $karyawan->status ?? '-' }}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
+                @if(session('error'))
+                <div class="alert alert-danger alert-dismissible">
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                    <h5><i class="icon fas fa-ban"></i> Error!</h5>
+                    {{ session('error') }}
+                    @if(session('errors'))
+                    <ul class="mt-2">
+                        @foreach(session('errors') as $error)
+                        <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    @endif
+                </div>
+                @endif
+
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="periode_id">Periode Gaji <span class="text-danger">*</span></label>
+                                <select name="periode_id" id="periode_id" class="form-control select2 @error('periode_id') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Periode Gaji --</option>
+                                    @foreach($periodeGajis as $periode)
+                                    <option value="{{ $periode->id }}">
+                                        {{ $periode->nama_periode }} ({{ $periode->tanggal_mulai->format('d/m/Y') }} - {{ $periode->tanggal_selesai->format('d/m/Y') }})
+                                    </option>
+                                    @endforeach
+                                </select>
+                                @error('periode_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card card-outline card-success">
-                            <div class="card-header">
-                                <h3 class="card-title">Data Periode</h3>
-                            </div>
-                            <div class="card-body">
-                                <table class="table table-sm">
-                                    <tr>
-                                        <th>Periode</th>
-                                        <td>{{ $periode->nama_periode }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Tanggal Mulai</th>
-                                        <td>{{ $periode->tanggal_mulai->format('d-m-Y') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Tanggal Selesai</th>
-                                        <td>{{ $periode->tanggal_selesai->format('d-m-Y') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Jumlah Hari</th>
-                                        <td>{{ $periode->tanggal_mulai->diffInDays($periode->tanggal_selesai) + 1 }} hari</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Status</th>
-                                        <td>
-                                            <span class="badge badge-{{ $periode->status == 'aktif' ? 'success' : 'secondary' }}">
-                                                {{ $periode->status }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </table>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="departemen_id">Departemen (Opsional)</label>
+                                <select name="departemen_id" id="departemen_id" class="form-control select2 @error('departemen_id') is-invalid @enderror">
+                                    <option value="">-- Semua Departemen --</option>
+                                    @foreach($departemens as $departemen)
+                                    <option value="{{ $departemen->id }}">{{ $departemen->name_departemen }}</option>
+                                    @endforeach
+                                </select>
+                                @error('departemen_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="status">Status Karyawan (Opsional)</label>
+                                <select name="status" id="status" class="form-control select2 @error('status') is-invalid @enderror">
+                                    <option value="">-- Semua Status --</option>
+                                    @foreach($statusOptions as $status)
+                                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                                    @endforeach
+                                </select>
+                                @error('status')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 row">
+                        <div class="text-center col-md-12">
+                            <button type="button" id="btnFilter" class="btn btn-primary">
+                                <i class="mr-1 fas fa-filter"></i> Filter Karyawan
+                            </button>
+                            <button type="button" id="btnBatchProcess" class="ml-2 btn btn-success">
+                                <i class="mr-1 fas fa-tasks"></i> Proses Batch
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="karyawan-container" style="display: none;">
+            <div class="card card-primary card-outline">
+                <div class="card-header">
+                    <h3 class="card-title">Daftar Karyawan</h3>
+                    <div class="card-tools">
+                        <span id="totalKaryawan" class="badge badge-primary">0 karyawan</span>
                     </div>
                 </div>
-
-                <!-- Data Absensi -->
-                <div class="mt-3 card card-outline card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Data Absensi ({{ $dataAbsensi['total_hari_kerja'] }} Hari Kerja)</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="info-box bg-success">
-                                    <span class="info-box-icon"><i class="fas fa-calendar-check"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Hadir</span>
-                                        <span class="info-box-number">{{ $dataAbsensi['hadir'] }} hari</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="info-box bg-warning">
-                                    <span class="info-box-icon"><i class="fas fa-calendar-minus"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Izin/Cuti</span>
-                                        <span class="info-box-number">{{ $dataAbsensi['izin'] }} hari</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="info-box bg-danger">
-                                    <span class="info-box-icon"><i class="fas fa-calendar-times"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Tidak Hadir</span>
-                                        <span class="info-box-number">{{ $dataAbsensi['tidak_hadir'] }} hari</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 table-responsive">
-                            <table class="table table-bordered table-striped">
+                <div class="card-body">
+                    <form id="createPenggajianForm" action="{{ route('penggajian.store') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="periode_id" id="form_periode_id">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="karyawanTable">
                                 <thead>
                                     <tr>
-                                        <th>Tanggal</th>
-                                        <th>Jam Masuk</th>
-                                        <th>Jam Pulang</th>
-                                        <th>Total Jam</th>
-                                        <th>Keterlambatan</th>
-                                        <th>Pulang Awal</th>
+                                        <th width="5%">
+                                            <div class="icheck-primary">
+                                                <input type="checkbox" id="checkAll">
+                                                <label for="checkAll"></label>
+                                            </div>
+                                        </th>
+                                        <th>NIK</th>
+                                        <th>Nama</th>
+                                        <th>Departemen</th>
+                                        <th>Bagian</th>
+                                        <th>Jabatan</th>
                                         <th>Status</th>
+                                        <th>Gaji Pokok</th>
+                                        <th width="10%">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    @forelse($dataAbsensi['absensi'] as $absensi)
-                                    <tr>
-                                        <td>{{ $absensi->tanggal->format('d-m-Y') }}</td>
-                                        <td>{{ $absensi->jam_masuk ? $absensi->jam_masuk->format('H:i') : '-' }}</td>
-                                        <td>{{ $absensi->jam_pulang ? $absensi->jam_pulang->format('H:i') : '-' }}</td>
-                                        <td>{{ $absensi->total_jam ?? '-' }}</td>
-                                        <td>
-                                            @if($absensi->keterlambatan > 0)
-                                            <span class="badge badge-warning">{{ $absensi->keterlambatan }} menit</span>
-                                            @else
-                                            -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($absensi->pulang_awal > 0)
-                                            <span class="badge badge-warning">{{ $absensi->pulang_awal }} menit</span>
-                                            @else
-                                            -
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($absensi->status == 'Hadir')
-                                            <span class="badge badge-success">Hadir</span>
-                                            @elseif($absensi->status == 'Izin' || $absensi->status == 'Cuti')
-                                            <span class="badge badge-warning">{{ $absensi->status }}</span>
-                                            @else
-                                            <span class="badge badge-danger">{{ $absensi->status ?? 'Tidak Hadir' }}</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center">Tidak ada data absensi</td>
-                                    </tr>
-                                    @endforelse
+                                <tbody id="karyawanList">
+                                    <!-- Data karyawan akan dimuat disini secara dinamis -->
                                 </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3 row">
+                            <div class="text-center col-md-12">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="mr-1 fas fa-save"></i> Proses Penggajian
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detail Karyawan -->
+<div class="modal fade" id="karyawanDetailModal" tabindex="-1" role="dialog" aria-labelledby="karyawanDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="karyawanDetailModalLabel">Detail Karyawan</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="text-center col-md-4">
+                        <img id="modalFotoKaryawan" src="" alt="Foto Karyawan" class="mb-3 rounded img-fluid" style="max-height: 200px;">
+                    </div>
+                    <div class="col-md-8">
+                        <h4 id="modalNamaKaryawan"></h4>
+                        <p><strong>NIK:</strong> <span id="modalNik"></span></p>
+                        <p><strong>Departemen:</strong> <span id="modalDepartemen"></span></p>
+                        <p><strong>Bagian:</strong> <span id="modalBagian"></span></p>
+                        <p><strong>Jabatan:</strong> <span id="modalJabatan"></span></p>
+                        <p><strong>Profesi:</strong> <span id="modalProfesi"></span></p>
+                        <p><strong>Status:</strong> <span id="modalStatus"></span></p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h5>Detail Gaji</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th>Gaji Pokok</th>
+                                    <td id="modalGajiPokok"></td>
+                                </tr>
+                                <tr>
+                                    <th>Tunjangan</th>
+                                    <td>
+                                        <ul id="modalTunjangan" class="list-unstyled"></ul>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Total Tunjangan</th>
+                                    <td id="modalTotalTunjangan"></td>
+                                </tr>
+                                <tr>
+                                    <th>Total Gaji</th>
+                                    <td id="modalTotalGaji" class="font-weight-bold"></td>
+                                </tr>
                             </table>
                         </div>
                     </div>
                 </div>
-
-                <form action="{{ route('penggajian.process') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="karyawan_id" value="{{ $karyawan->id }}">
-                    <input type="hidden" name="periode_id" value="{{ $periode->id }}">
-
-                    <div class="row">
-                        <!-- Gaji Pokok & Tunjangan -->
-                        <div class="col-md-6">
-                            <div class="card card-outline card-success">
-                                <div class="card-header">
-                                    <h3 class="card-title">Gaji Pokok & Tunjangan</h3>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-bordered">
-                                        <tr>
-                                            <th>Gaji Pokok</th>
-                                            <td>
-                                                <input type="number" name="gaji_pokok" id="gaji_pokok" class="form-control" value="{{ $karyawan->jabatan->gaji_pokok ?? 0 }}" min="0" required readonly>
-                                            </td>
-                                        </tr>
-
-                                        <!-- Tunjangan Tetap -->
-                                        <tr class="bg-light">
-                                            <th colspan="2" class="text-center">Tunjangan Tetap</th>
-                                        </tr>
-
-                                        @if($karyawan->jabatan && $karyawan->jabatan->tunjangan_jabatan > 0)
-                                        <tr>
-                                            <th>Tunjangan Jabatan</th>
-                                            <td>
-                                                <input type="hidden" name="tunjangan[0][nama]" value="Tunjangan Jabatan">
-                                                <input type="number" name="tunjangan[0][nominal]" class="form-control tunjangan-item" value="{{ $karyawan->jabatan->tunjangan_jabatan }}" min="0" required readonly>
-                                            </td>
-                                        </tr>
-                                        @endif
-
-                                        @if($karyawan->profesi && $karyawan->profesi->tunjangan_profesi > 0)
-                                        <tr>
-                                            <th>Tunjangan Profesi</th>
-                                            <td>
-                                                <input type="hidden" name="tunjangan[1][nama]" value="Tunjangan Profesi">
-                                                <input type="number" name="tunjangan[1][nominal]" class="form-control tunjangan-item" value="{{ $karyawan->profesi->tunjangan_profesi }}" min="0" required readonly>
-                                            </td>
-                                        </tr>
-                                        @endif
-
-                                        <!-- Tunjangan Tambahan -->
-                                        <tr class="bg-light">
-                                            <th colspan="2" class="text-center">Tunjangan Tambahan</th>
-                                        </tr>
-
-                                        <tr>
-                                            <th>Lembur</th>
-                                            <td>
-                                                <input type="hidden" name="tunjangan[2][nama]" value="Tunjangan Lembur">
-                                                <input type="number" name="tunjangan[2][nominal]" class="form-control tunjangan-item" value="{{ $dataAbsensi['total_lembur'] }}" min="0">
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <th>Tunjangan Kehadiran</th>
-                                            <td>
-                                                <input type="hidden" name="tunjangan[3][nama]" value="Tunjangan Kehadiran">
-                                                <input type="number" name="tunjangan[3][nominal]" class="form-control tunjangan-item" value="{{ $dataAbsensi['tunjangan_kehadiran'] }}" min="0">
-                                            </td>
-                                        </tr>
-
-                                        <!-- Tunjangan Tambahan Dinamis -->
-                                        <tr>
-                                            <td colspan="2">
-                                                <button type="button" class="btn btn-sm btn-primary" id="btnTambahTunjangan">+ Tambah Tunjangan</button>
-                                            </td>
-                                        </tr>
-
-                                        <tbody id="tunjangan-tambahan">
-                                            <!-- Tunjangan tambahan akan ditambahkan di sini -->
-                                        </tbody>
-
-                                        <tr class="bg-success">
-                                            <th>Total Tunjangan</th>
-                                            <td>
-                                                <input type="text" id="total_tunjangan_display" class="form-control-plaintext font-weight-bold" value="Rp 0" readonly>
-                                                <input type="hidden" name="total_tunjangan" id="total_tunjangan" value="0">
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Potongan -->
-                        <div class="col-md-6">
-                            <div class="card card-outline card-danger">
-                                <div class="card-header">
-                                    <h3 class="card-title">Potongan</h3>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-bordered">
-                                        <tr class="bg-light">
-                                            <th colspan="2" class="text-center">Potongan Wajib</th>
-                                        </tr>
-
-                                        <tr>
-                                            <th>BPJS Kesehatan (1%)</th>
-                                            <td>
-                                                <input type="hidden" name="potongan[0][nama]" value="BPJS Kesehatan">
-                                                <input type="number" name="potongan[0][nominal]" class="form-control potongan-item" value="{{ $potonganBPJS['kesehatan'] }}" min="0" required>
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <th>BPJS Ketenagakerjaan (2%)</th>
-                                            <td>
-                                                <input type="hidden" name="potongan[1][nama]" value="BPJS Ketenagakerjaan">
-                                                <input type="number" name="potongan[1][nominal]" class="form-control potongan-item" value="{{ $potonganBPJS['ketenagakerjaan'] }}" min="0" required>
-                                            </td>
-                                        </tr>
-
-                                        <tr class="bg-light">
-                                            <th colspan="2" class="text-center">Potongan Absensi</th>
-                                        </tr>
-
-                                        <tr>
-                                            <th>Potongan Ketidakhadiran</th>
-                                            <td>
-                                                <input type="hidden" name="potongan[2][nama]" value="Potongan Ketidakhadiran">
-                                                <input type="number" name="potongan[2][nominal]" class="form-control potongan-item" value="{{ $potonganAbsensi['tidak_hadir'] }}" min="0">
-                                            </td>
-                                        </tr>
-
-                                        <tr>
-                                            <th>Potongan Keterlambatan</th>
-                                            <td>
-                                                <input type="hidden" name="potongan[3][nama]" value="Potongan Keterlambatan">
-                                                <input type="number" name="potongan[3][nominal]" class="form-control potongan-item" value="{{ $potonganAbsensi['keterlambatan'] }}" min="0">
-                                            </td>
-                                        </tr>
-
-                                        <!-- Potongan Tambahan -->
-                                        <tr class="bg-light">
-                                            <th colspan="2" class="text-center">Potongan Tambahan</th>
-                                        </tr>
-
-                                        @if(count($dataPotongan) > 0)
-                                        @foreach($dataPotongan as $index => $potongan)
-                                        <tr>
-                                            <th>{{ $potongan->nama_potongan }}</th>
-                                            <td>
-                                                <input type="hidden" name="potongan[{{ 4 + $index }}][nama]" value="{{ $potongan->nama_potongan }}">
-                                                <input type="number" name="potongan[{{ 4 + $index }}][nominal]" class="form-control potongan-item" value="0" min="0">
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                        @endif
-
-                                        <!-- Potongan Tambahan Dinamis -->
-                                        <tr>
-                                            <td colspan="2">
-                                                <button type="button" class="btn btn-sm btn-danger" id="btnTambahPotongan">+ Tambah Potongan</button>
-                                            </td>
-                                        </tr>
-
-                                        <tbody id="potongan-tambahan">
-                                            <!-- Potongan tambahan akan ditambahkan di sini -->
-                                        </tbody>
-
-                                        <tr class="bg-danger">
-                                            <th>Total Potongan</th>
-                                            <td>
-                                                <input type="text" id="total_potongan_display" class="form-control-plaintext font-weight-bold" value="Rp 0" readonly>
-                                                <input type="hidden" name="total_potongan" id="total_potongan" value="0">
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Total Gaji -->
-                    <div class="mt-3 card card-outline card-primary">
-                        <div class="card-header">
-                            <h3 class="card-title">Total Gaji</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="info-box bg-primary">
-                                        <span class="info-box-icon"><i class="fas fa-money-bill-wave"></i></span>
-                                        <div class="info-box-content">
-                                            <span class="info-box-text">Gaji Pokok</span>
-                                            <span class="info-box-number" id="display_gaji_pokok">Rp {{ number_format($karyawan->jabatan->gaji_pokok ?? 0, 0, ',', '.') }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="info-box bg-success">
-                                        <span class="info-box-icon"><i class="fas fa-plus"></i></span>
-                                        <div class="info-box-content">
-                                            <span class="info-box-text">Total Tunjangan</span>
-                                            <span class="info-box-number" id="display_total_tunjangan">Rp 0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="info-box bg-danger">
-                                        <span class="info-box-icon"><i class="fas fa-minus"></i></span>
-                                        <div class="info-box-content">
-                                            <span class="info-box-text">Total Potongan</span>
-                                            <span class="info-box-number" id="display_total_potongan">Rp 0</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-3 row">
-                                <div class="col-md-12">
-                                    <div class="alert alert-success">
-                                        <h4 class="text-center">Total Gaji Bersih</h4>
-                                        <h2 class="text-center" id="gaji_bersih_display">Rp 0</h2>
-                                        <input type="hidden" name="gaji_bersih" id="gaji_bersih" value="0">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-3 row">
-                                <div class="text-center col-md-12">
-                                    <button type="button" class="mr-2 btn btn-secondary btn-lg" onclick="window.history.back();">
-                                        <i class="mr-1 fas fa-arrow-left"></i> Kembali
-                                    </button>
-                                    <button type="submit" class="btn btn-success btn-lg">
-                                        <i class="mr-1 fas fa-save"></i> Proses Penggajian
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" id="btnProsesKaryawan">Proses Penggajian</button>
             </div>
         </div>
     </div>
@@ -443,136 +215,347 @@
 @stop
 
 @section('css')
-<style>
-    .info-box-number {
-        font-size: 1.5rem;
-    }
-
-    #gaji_bersih_display {
-        font-size: 2rem;
-        font-weight: bold;
-    }
-
-</style>
+<link rel="stylesheet" href="{{ asset('vendor/select2/css/select2.min.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/datatables/css/dataTables.bootstrap4.min.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
 @stop
 
 @section('js')
+<script src="{{ asset('vendor/select2/js/select2.full.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/js/dataTables.bootstrap4.min.js') }}"></script>
+<script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
 <script>
     $(function() {
-        // Inisialisasi counter untuk tunjangan dan potongan tambahan
-        let tunjanganCounter = {
-            {
-                count($karyawan - > jabatan && $karyawan - > jabatan - > tunjangan_jabatan > 0 ? 1 : 0) +
-                    count($karyawan - > profesi && $karyawan - > profesi - > tunjangan_profesi > 0 ? 1 : 0) + 2
+        // Initialize Select2
+        $('.select2').select2({
+            theme: 'bootstrap4'
+        });
+
+        let dataTable;
+        let selectedKaryawanId = null;
+
+        // Fungsi untuk memfilter karyawan
+        $('#btnFilter').on('click', function() {
+            const periodeId = $('#periode_id').val();
+            const departemenId = $('#departemen_id').val();
+            const status = $('#status').val();
+
+            if (!periodeId) {
+                Swal.fire({
+                    title: 'Error!'
+                    , text: 'Silakan pilih periode gaji terlebih dahulu'
+                    , icon: 'error'
+                });
+                return;
             }
-        };
-        let potonganCounter = {
-            {
-                4 + count($dataPotongan)
-            }
-        };
 
-        // Fungsi untuk menambah tunjangan
-        $('#btnTambahTunjangan').click(function() {
-            const html = `
-                <tr class="tunjangan-row">
-                    <td>
-                        <input type="text" name="tunjangan[${tunjanganCounter}][nama]" class="form-control" placeholder="Nama Tunjangan" required>
-                    </td>
-                    <td class="d-flex">
-                        <input type="number" name="tunjangan[${tunjanganCounter}][nominal]" class="form-control tunjangan-item" value="0" min="0" required>
-                        <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-tunjangan">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            $('#tunjangan-tambahan').append(html);
-            tunjanganCounter++;
-            hitungTotal();
-        });
+            // Update hidden input form
+            $('#form_periode_id').val(periodeId);
 
-        // Fungsi untuk menambah potongan
-        $('#btnTambahPotongan').click(function() {
-            const html = `
-                <tr class="potongan-row">
-                    <td>
-                        <input type="text" name="potongan[${potonganCounter}][nama]" class="form-control" placeholder="Nama Potongan" required>
-                    </td>
-                    <td class="d-flex">
-                        <input type="number" name="potongan[${potonganCounter}][nominal]" class="form-control potongan-item" value="0" min="0" required>
-                        <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-potongan">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            $('#potongan-tambahan').append(html);
-            potonganCounter++;
-            hitungTotal();
-        });
-
-        // Hapus tunjangan
-        $(document).on('click', '.btn-hapus-tunjangan', function() {
-            $(this).closest('tr').remove();
-            hitungTotal();
-        });
-
-        // Hapus potongan
-        $(document).on('click', '.btn-hapus-potongan', function() {
-            $(this).closest('tr').remove();
-            hitungTotal();
-        });
-
-        // Hitung total saat nilai berubah
-        $(document).on('input', '.tunjangan-item, .potongan-item, #gaji_pokok', function() {
-            hitungTotal();
-        });
-
-        // Fungsi untuk menghitung total
-        function hitungTotal() {
-            let totalTunjangan = 0;
-            let totalPotongan = 0;
-
-            // Hitung total tunjangan
-            $('.tunjangan-item').each(function() {
-                const nilai = parseInt($(this).val()) || 0;
-                totalTunjangan += nilai;
+            // Show loading
+            Swal.fire({
+                title: 'Loading...'
+                , text: 'Sedang memuat data karyawan'
+                , allowOutsideClick: false
+                , didOpen: () => {
+                    Swal.showLoading();
+                }
             });
 
-            // Hitung total potongan
-            $('.potongan-item').each(function() {
-                const nilai = parseInt($(this).val()) || 0;
-                totalPotongan += nilai;
+            // Get filtered karyawans via AJAX
+            $.ajax({
+                url: "{{ route('penggajian.getFilteredKaryawans') }}"
+                , type: 'POST'
+                , data: {
+                    _token: "{{ csrf_token() }}"
+                    , periode_id: periodeId
+                    , departemen_id: departemenId
+                    , status: status
+                }
+                , success: function(response) {
+                    Swal.close();
+
+                    if (response.success) {
+                        const karyawans = response.data;
+                        $('#totalKaryawan').text(response.count + ' karyawan');
+
+                        // Tampilkan container karyawan
+                        $('#karyawan-container').show();
+
+                        // Bersihkan tabel
+                        if (dataTable) {
+                            dataTable.destroy();
+                        }
+
+                        const tableBody = $('#karyawanList');
+                        tableBody.empty();
+
+                        if (karyawans.length === 0) {
+                            tableBody.append(`
+                                    <tr>
+                                        <td colspan="9" class="text-center">Tidak ada karyawan yang belum diproses pada periode ini</td>
+                                    </tr>
+                                `);
+                        } else {
+                            // Populate table with karyawan data
+                            karyawans.forEach(function(karyawan) {
+                                const karyawanId = karyawan.id;
+                                const gajiPokok = karyawan.jabatan ? karyawan.jabatan.gaji_pokok : 0;
+                                const formattedGajiPokok = formatRupiah(gajiPokok);
+
+                                tableBody.append(`
+                                        <tr>
+                                            <td class="text-center">
+                                                <div class="icheck-primary">
+                                                    <input type="checkbox" class="karyawan-checkbox" id="karyawan_${karyawanId}" name="karyawan_ids[]" value="${karyawanId}">
+                                                    <label for="karyawan_${karyawanId}"></label>
+                                                </div>
+                                            </td>
+                                            <td>${karyawan.nik || '-'}</td>
+                                            <td>${karyawan.nama_karyawan || '-'}</td>
+                                            <td>${karyawan.departemen ? karyawan.departemen.name_departemen : '-'}</td>
+                                            <td>${karyawan.bagian ? karyawan.bagian.name_bagian : '-'}</td>
+                                            <td>${karyawan.jabatan ? karyawan.jabatan.name_jabatan : '-'}</td>
+                                            <td>
+                                                <span class="badge badge-${getStatusBadgeClass(karyawan.status)}">
+                                                    ${karyawan.status || '-'}
+                                                </span>
+                                            </td>
+                                            <td>${formattedGajiPokok}</td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-info btn-view-detail" data-id="${karyawanId}" data-karyawan='${JSON.stringify(karyawan)}'>
+                                                    <i class="fas fa-eye"></i> Detail
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `);
+                            });
+
+                            // Initialize DataTable
+                            dataTable = $('#karyawanTable').DataTable({
+                                responsive: true
+                                , autoWidth: false
+                                , language: {
+                                    lengthMenu: "Tampilkan _MENU_ data per halaman"
+                                    , zeroRecords: "Tidak ada data yang ditemukan"
+                                    , info: "Menampilkan _START_ s.d _END_ dari _TOTAL_ data"
+                                    , infoEmpty: "Tidak ada data yang tersedia"
+                                    , infoFiltered: "(difilter dari _MAX_ total data)"
+                                    , search: "Cari:"
+                                    , paginate: {
+                                        first: "Pertama"
+                                        , last: "Terakhir"
+                                        , next: "Selanjutnya"
+                                        , previous: "Sebelumnya"
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            title: 'Error!'
+                            , text: 'Gagal memuat data karyawan'
+                            , icon: 'error'
+                        });
+                    }
+                }
+                , error: function(xhr) {
+                    Swal.close();
+                    console.error(xhr);
+
+                    let errorMessage = 'Terjadi kesalahan saat memuat data';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+
+                    Swal.fire({
+                        title: 'Error!'
+                        , text: errorMessage
+                        , icon: 'error'
+                    });
+                }
             });
+        });
 
-            // Ambil gaji pokok
-            const gajiPokok = parseInt($('#gaji_pokok').val()) || 0;
-
-            // Hitung gaji bersih
-            const gajiBersih = gajiPokok + totalTunjangan - totalPotongan;
-
-            // Update display dan hidden inputs
-            $('#total_tunjangan').val(totalTunjangan);
-            $('#total_potongan').val(totalPotongan);
-            $('#gaji_bersih').val(gajiBersih);
-
-            // Format currency
-            $('#total_tunjangan_display').val(formatRupiah(totalTunjangan));
-            $('#total_potongan_display').val(formatRupiah(totalPotongan));
-            $('#display_gaji_pokok').text(formatRupiah(gajiPokok));
-            $('#display_total_tunjangan').text(formatRupiah(totalTunjangan));
-            $('#display_total_potongan').text(formatRupiah(totalPotongan));
-            $('#gaji_bersih_display').text(formatRupiah(gajiBersih));
+        // Helper function to get badge class based on status
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'aktif':
+                    return 'success';
+                case 'nonaktif':
+                    return 'danger';
+                case 'cuti':
+                    return 'warning';
+                default:
+                    return 'secondary';
+            }
         }
 
-        // Format currency ke Rupiah
+        // Format currency to Rupiah
         function formatRupiah(angka) {
             return 'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
-        // Inisialisasi perhitungan total
-        hitungTotal();
+        // Fungsi untuk menampilkan modal detail karyawan
+        $(document).on('click', '.btn-view-detail', function() {
+            const karyawanId = $(this).data('id');
+            const karyawan = $(this).data('karyawan');
+            selectedKaryawanId = karyawanId;
+
+            // Foto karyawan
+            const fotoUrl = karyawan.foto_karyawan ?
+                `{{ asset('storage/karyawan/foto') }}/${karyawan.foto_karyawan}` :
+                '{{ asset("images/default-avatar.png") }}';
+
+            // Detail karyawan
+            $('#modalFotoKaryawan').attr('src', fotoUrl);
+            $('#modalNamaKaryawan').text(karyawan.nama_karyawan || '-');
+            $('#modalNik').text(karyawan.nik || '-');
+            $('#modalDepartemen').text(karyawan.departemen ? karyawan.departemen.name_departemen : '-');
+            $('#modalBagian').text(karyawan.bagian ? karyawan.bagian.name_bagian : '-');
+            $('#modalJabatan').text(karyawan.jabatan ? karyawan.jabatan.name_jabatan : '-');
+            $('#modalProfesi').text(karyawan.profesi ? karyawan.profesi.name_profesi : '-');
+            $('#modalStatus').html(`<span class="badge badge-${getStatusBadgeClass(karyawan.status)}">${karyawan.status || '-'}</span>`);
+
+            // Detail gaji
+            const gajiPokok = karyawan.jabatan ? karyawan.jabatan.gaji_pokok : 0;
+            $('#modalGajiPokok').text(formatRupiah(gajiPokok));
+
+            // Tunjangan
+            let totalTunjangan = 0;
+            const tunjanganList = $('#modalTunjangan');
+            tunjanganList.empty();
+
+            // Tunjangan jabatan
+            if (karyawan.jabatan && karyawan.jabatan.tunjangan_jabatan > 0) {
+                tunjanganList.append(`<li>Tunjangan Jabatan: ${formatRupiah(karyawan.jabatan.tunjangan_jabatan)}</li>`);
+                totalTunjangan += karyawan.jabatan.tunjangan_jabatan;
+            }
+
+            // Tunjangan profesi
+            if (karyawan.profesi && karyawan.profesi.tunjangan_profesi > 0) {
+                tunjanganList.append(`<li>Tunjangan Profesi: ${formatRupiah(karyawan.profesi.tunjangan_profesi)}</li>`);
+                totalTunjangan += karyawan.profesi.tunjangan_profesi;
+            }
+
+            // Jika tidak ada tunjangan
+            if (totalTunjangan === 0) {
+                tunjanganList.append('<li>Tidak ada tunjangan</li>');
+            }
+
+            $('#modalTotalTunjangan').text(formatRupiah(totalTunjangan));
+            $('#modalTotalGaji').text(formatRupiah(gajiPokok + totalTunjangan));
+
+            // Tampilkan modal
+            $('#karyawanDetailModal').modal('show');
+        });
+
+        // Proses penggajian untuk karyawan yang dipilih di modal
+        $('#btnProsesKaryawan').on('click', function() {
+            if (selectedKaryawanId) {
+                // Centang checkbox karyawan yang dipilih
+                const checkbox = $(`#karyawan_${selectedKaryawanId}`);
+                checkbox.prop('checked', true);
+
+                // Submit form hanya untuk karyawan ini
+                $('#createPenggajianForm').submit();
+            } else {
+                Swal.fire({
+                    title: 'Error!'
+                    , text: 'Tidak ada karyawan yang dipilih'
+                    , icon: 'error'
+                });
+            }
+        });
+
+        // Fungsi untuk proses batch
+        $('#btnBatchProcess').on('click', function() {
+            const periodeId = $('#periode_id').val();
+            const departemenId = $('#departemen_id').val();
+            const status = $('#status').val();
+
+            if (!periodeId) {
+                Swal.fire({
+                    title: 'Error!'
+                    , text: 'Silakan pilih periode gaji terlebih dahulu'
+                    , icon: 'error'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Konfirmasi'
+                , text: 'Apakah Anda yakin ingin memproses penggajian secara batch? Semua karyawan yang sesuai filter akan diproses penggajiannya.'
+                , icon: 'question'
+                , showCancelButton: true
+                , confirmButtonText: 'Ya, Proses'
+                , cancelButtonText: 'Batal'
+                , confirmButtonColor: '#3085d6'
+                , cancelButtonColor: '#d33'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirect to batch process route
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "{{ route('penggajian.batchProcess') }}";
+
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = "{{ csrf_token() }}";
+                    form.appendChild(csrfToken);
+
+                    const periodeInput = document.createElement('input');
+                    periodeInput.type = 'hidden';
+                    periodeInput.name = 'periode_id';
+                    periodeInput.value = periodeId;
+                    form.appendChild(periodeInput);
+
+                    if (departemenId) {
+                        const departemenInput = document.createElement('input');
+                        departemenInput.type = 'hidden';
+                        departemenInput.name = 'departemen_id';
+                        departemenInput.value = departemenId;
+                        form.appendChild(departemenInput);
+                    }
+
+                    if (status) {
+                        const statusInput = document.createElement('input');
+                        statusInput.type = 'hidden';
+                        statusInput.name = 'status';
+                        statusInput.value = status;
+                        form.appendChild(statusInput);
+                    }
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+
+        // Fungsi check all checkbox
+        $('#checkAll').on('click', function() {
+            $('.karyawan-checkbox').prop('checked', $(this).prop('checked'));
+        });
+
+        // Validasi sebelum submit
+        $('#createPenggajianForm').on('submit', function(e) {
+            const checkedKaryawans = $('.karyawan-checkbox:checked').length;
+
+            if (checkedKaryawans === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Error!'
+                    , text: 'Silakan pilih minimal satu karyawan untuk diproses'
+                    , icon: 'error'
+                });
+                return false;
+            }
+
+            return true;
+        });
     });
 
 </script>
