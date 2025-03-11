@@ -1,10 +1,10 @@
 @extends('adminlte::page')
 
-@section('title', 'Download Log Berdasarkan Tanggal')
+@section('title', 'Download Log Per Karyawan')
 
 @section('content_header')
 <div class="d-flex justify-content-between align-items-center">
-    <h1>Download Log Berdasarkan Tanggal</h1>
+    <h1>Download Log Per Karyawan</h1>
     <div>
         <a href="{{ route('mesinabsensis.show', $mesinabsensi) }}" class="mr-1 btn btn-info">
             <i class="fas fa-info-circle"></i> Detail Mesin
@@ -21,26 +21,17 @@
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Filter Tanggal</h3>
+                <h3 class="card-title">Filter Karyawan</h3>
             </div>
             <div class="card-body">
-                <form action="{{ route('mesinabsensis.download-logs-range') }}" method="GET">
+                <form action="{{ route('mesinabsensis.download-logs-user') }}" method="GET">
                     <input type="hidden" name="mesin_id" value="{{ $mesinabsensi->id }}">
 
                     <div class="form-group">
-                        <label for="start_date">Tanggal Mulai</label>
-                        <input type="date" class="form-control @error('start_date') is-invalid @enderror" id="start_date" name="start_date" value="{{ request('start_date', date('Y-m-d', strtotime('-7 days'))) }}" required>
-                        @error('start_date')
-                        <div class="invalid-feedback">
-                            {{ $message }}
-                        </div>
-                        @enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="end_date">Tanggal Selesai</label>
-                        <input type="date" class="form-control @error('end_date') is-invalid @enderror" id="end_date" name="end_date" value="{{ request('end_date', date('Y-m-d')) }}" required>
-                        @error('end_date')
+                        <label for="user_id">NIK Karyawan</label>
+                        <input type="text" class="form-control @error('user_id') is-invalid @enderror" id="user_id" name="user_id" value="{{ request('user_id') }}" required>
+                        <small class="form-text text-muted">Masukkan NIK (KTP) karyawan</small>
+                        @error('user_id')
                         <div class="invalid-feedback">
                             {{ $message }}
                         </div>
@@ -49,7 +40,7 @@
 
                     <div class="form-group">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-filter"></i> Filter
+                            <i class="fas fa-search"></i> Cari
                         </button>
                         <a href="{{ route('mesinabsensis.download-logs', $mesinabsensi) }}" class="btn btn-secondary">
                             <i class="fas fa-sync"></i> Reset
@@ -83,25 +74,17 @@
 
         <div class="mt-4 card">
             <div class="card-header bg-success">
-                <h3 class="card-title">Pilihan Tanggal Cepat</h3>
+                <h3 class="card-title">Cari Karyawan</h3>
             </div>
             <div class="card-body">
-                <div class="btn-group-vertical w-100">
-                    <a href="{{ route('mesinabsensis.download-logs-range', ['mesin_id' => $mesinabsensi->id, 'start_date' => date('Y-m-d'), 'end_date' => date('Y-m-d')]) }}" class="text-left btn btn-outline-primary">
-                        <i class="mr-2 fas fa-calendar-day"></i> Hari Ini
-                    </a>
-                    <a href="{{ route('mesinabsensis.download-logs-range', ['mesin_id' => $mesinabsensi->id, 'start_date' => date('Y-m-d', strtotime('yesterday')), 'end_date' => date('Y-m-d', strtotime('yesterday'))]) }}" class="text-left btn btn-outline-primary">
-                        <i class="mr-2 fas fa-calendar-day"></i> Kemarin
-                    </a>
-                    <a href="{{ route('mesinabsensis.download-logs-range', ['mesin_id' => $mesinabsensi->id, 'start_date' => date('Y-m-d', strtotime('-7 days')), 'end_date' => date('Y-m-d')]) }}" class="text-left btn btn-outline-primary">
-                        <i class="mr-2 fas fa-calendar-week"></i> 7 Hari Terakhir
-                    </a>
-                    <a href="{{ route('mesinabsensis.download-logs-range', ['mesin_id' => $mesinabsensi->id, 'start_date' => date('Y-m-d', strtotime('-30 days')), 'end_date' => date('Y-m-d')]) }}" class="text-left btn btn-outline-primary">
-                        <i class="mr-2 fas fa-calendar-alt"></i> 30 Hari Terakhir
-                    </a>
-                    <a href="{{ route('mesinabsensis.download-logs-range', ['mesin_id' => $mesinabsensi->id, 'start_date' => date('Y-m-01'), 'end_date' => date('Y-m-t')]) }}" class="text-left btn btn-outline-primary">
-                        <i class="mr-2 fas fa-calendar-alt"></i> Bulan Ini
-                    </a>
+                <div class="form-group">
+                    <label for="search_karyawan">Cari Berdasarkan Nama</label>
+                    <input type="text" class="form-control" id="search_karyawan" placeholder="Ketik nama karyawan (min. 3 karakter)">
+                </div>
+                <div id="search_results" class="mt-2" style="display: none;">
+                    <div class="list-group" id="search_results_list">
+                        <!-- Search results will be displayed here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -112,10 +95,8 @@
             <div class="card-header">
                 <h3 class="card-title">
                     Log Absensi
-                    @if(request('start_date') && request('end_date'))
-                    ({{ \Carbon\Carbon::parse(request('start_date'))->format('d M Y') }}
-                    s/d
-                    {{ \Carbon\Carbon::parse(request('end_date'))->format('d M Y') }})
+                    @if(request('user_id'))
+                    untuk NIK: {{ request('user_id') }}
                     @endif
                 </h3>
                 <div class="card-tools">
@@ -148,7 +129,6 @@
                                 <tr>
                                     <th width="10"><input type="checkbox" id="checkAll"></th>
                                     <th width="10">#</th>
-                                    <th>NIK</th>
                                     <th>Tanggal</th>
                                     <th>Jam</th>
                                     <th>Verifikasi</th>
@@ -168,7 +148,6 @@
                                         <input type="checkbox" name="selected_logs[]" value="{{ $log['pin'] }}_{{ $log['datetime'] }}" class="log-checkbox">
                                     </td>
                                     <td>{{ $index + 1 }}</td>
-                                    <td>{{ $log['pin'] }}</td>
                                     <td>{{ $date }}</td>
                                     <td>{{ $time }}</td>
                                     <td>
@@ -195,11 +174,11 @@
                 </form>
                 @elseif(isset($filteredLogs) && count($filteredLogs) == 0)
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Tidak ada log absensi yang ditemukan pada rentang tanggal yang dipilih.
+                    <i class="fas fa-info-circle"></i> Tidak ada log absensi yang ditemukan untuk karyawan dengan NIK {{ request('user_id') }}.
                 </div>
                 @else
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i> Silakan pilih rentang tanggal dan klik tombol "Filter" untuk melihat log absensi.
+                    <i class="fas fa-exclamation-triangle"></i> Silakan masukkan NIK karyawan dan klik tombol "Cari" untuk melihat log absensi.
                 </div>
                 @endif
             </div>
@@ -220,23 +199,23 @@
         // Initialize DataTable if there's data
         @if(isset($filteredLogs) && count($filteredLogs) > 0)
         var table = $('#logsTable').DataTable({
-            "paging": true,
-            "lengthChange": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "autoWidth": false,
-            "responsive": true,
-            "language": {
+            "paging": true
+            , "lengthChange": true
+            , "searching": true
+            , "ordering": true
+            , "info": true
+            , "autoWidth": false
+            , "responsive": true
+            , "language": {
                 "url": "{{ asset('vendor/datatables/js/indonesian.json') }}"
-            },
-            "columnDefs": [{
-                "orderable": false,
-                "targets": [0]
-            }],
-            "order": [
-                [3, 'desc'],
-                [4, 'desc']
+            }
+            , "columnDefs": [{
+                "orderable": false
+                , "targets": [0]
+            }]
+            , "order": [
+                [2, 'desc']
+                , [3, 'desc']
             ] // Sort by date & time
         });
 
@@ -263,11 +242,10 @@
             var data = [];
             $('#logsTable tbody tr').each(function() {
                 var rowData = {
-                    'NIK': $(this).find('td:eq(2)').text(),
-                    'Tanggal': $(this).find('td:eq(3)').text(),
-                    'Jam': $(this).find('td:eq(4)').text(),
-                    'Verifikasi': $(this).find('td:eq(5)').text().trim(),
-                    'Status': $(this).find('td:eq(6)').text().trim()
+                    'Tanggal': $(this).find('td:eq(2)').text()
+                    , 'Jam': $(this).find('td:eq(3)').text()
+                    , 'Verifikasi': $(this).find('td:eq(4)').text().trim()
+                    , 'Status': $(this).find('td:eq(5)').text().trim()
                 };
                 data.push(rowData);
             });
@@ -297,7 +275,8 @@
             var link = document.createElement('a');
             var url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', 'log_absensi_{{ $mesinabsensi->nama }}_{{ date("Ymd") }}.csv');
+            link.setAttribute('download', 'log_absensi_{{ request('
+                user_id ') }}_{{ date("Ymd") }}.csv');
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -305,18 +284,57 @@
         });
         @endif
 
-        // Date range validation
-        $('#start_date, #end_date').on('change', function() {
-            var startDate = $('#start_date').val();
-            var endDate = $('#end_date').val();
+        // Handle search for employees
+        let searchTimeout;
+        $('#search_karyawan').on('keyup', function() {
+            clearTimeout(searchTimeout);
+            const query = $(this).val();
 
-            if (startDate && endDate) {
-                if (new Date(startDate) > new Date(endDate)) {
-                    alert('Tanggal mulai tidak boleh lebih besar dari tanggal selesai');
-                    $('#end_date').val(startDate);
-                }
+            if (query.length < 3) {
+                $('#search_results').hide();
+                return;
             }
+
+            searchTimeout = setTimeout(function() {
+                $.ajax({
+                    url: '{{ route("karyawans.search") }}'
+                    , method: 'GET'
+                    , data: {
+                        q: query
+                    }
+                    , dataType: 'json'
+                    , success: function(response) {
+                        let html = '';
+
+                        if (response.data.length === 0) {
+                            html = '<div class="list-group-item">Tidak ada hasil yang ditemukan</div>';
+                        } else {
+                            response.data.forEach(function(karyawan) {
+                                html += `
+                                    <a href="{{ route('mesinabsensis.download-logs-user') }}?mesin_id={{ $mesinabsensi->id }}&user_id=${karyawan.nik}"
+                                       class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h5 class="mb-1">${karyawan.nama_karyawan}</h5>
+                                            <small>${karyawan.nik || 'NIK tidak tersedia'}</small>
+                                        </div>
+                                        <p class="mb-1">${karyawan.bagian ? karyawan.bagian.name_bagian : 'Bagian tidak tersedia'}</p>
+                                    </a>
+                                `;
+                            });
+                        }
+
+                        $('#search_results_list').html(html);
+                        $('#search_results').show();
+                    }
+                    , error: function(xhr) {
+                        console.error('Error searching for employees:', xhr);
+                        $('#search_results_list').html('<div class="list-group-item text-danger">Terjadi kesalahan saat mencari</div>');
+                        $('#search_results').show();
+                    }
+                });
+            }, 500);
         });
     });
+
 </script>
 @stop

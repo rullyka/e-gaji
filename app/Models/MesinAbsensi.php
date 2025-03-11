@@ -293,4 +293,117 @@ class MesinAbsensi extends Model
 
         return substr($data, $startPos, $endPos - $startPos);
     }
+
+    /**
+     * Auto detect IP address for the machine and update if necessary.
+     *
+     * @return array [success, message, old_ip, new_ip]
+     */
+    public function autoDetectIp()
+    {
+        // Current IP segment
+        $currentIpParts = explode('.', $this->alamat_ip);
+        $originalIp = $this->alamat_ip;
+
+        // If IP format is invalid, return error
+        if (count($currentIpParts) !== 4) {
+            return [
+                'success' => false,
+                'message' => 'Format IP tidak valid: ' . $this->alamat_ip,
+                'old_ip' => $originalIp,
+                'new_ip' => null
+            ];
+        }
+
+        // Check if current IP is still valid
+        $connect = @fsockopen($this->alamat_ip, "80", $errno, $errstr, 1);
+        if ($connect) {
+            fclose($connect);
+            return [
+                'success' => true,
+                'message' => 'IP saat ini masih valid dan terhubung.',
+                'old_ip' => $originalIp,
+                'new_ip' => $originalIp
+            ];
+        }
+
+        // Get the subnet (first 3 parts of the IP)
+        $subnet = $currentIpParts[0] . '.' . $currentIpParts[1] . '.' . $currentIpParts[2];
+
+        // Try to find the device on the network
+        $found = false;
+        $newIp = null;
+
+        // Try to scan IP range in the same subnet (last octet from 1 to 254)
+        for ($i = 1; $i <= 254; $i++) {
+            $testIp = $subnet . '.' . $i;
+
+            // Skip current IP (already know it's not working)
+            if ($testIp === $originalIp) {
+                continue;
+            }
+
+            // Try to connect to device
+            $connect = @fsockopen($testIp, "80", $errno, $errstr, 0.5); // Short timeout for quick scanning
+
+            if ($connect) {
+                // Try to verify if it's a fingerprint device by checking for iWsService
+                $soap_request = "<GetDeviceInfo><ArgComKey xsi:type=\"xsd:integer\">" . $this->kunci_komunikasi . "</ArgComKey></GetDeviceInfo>";
+                $newLine = "\r\n";
+
+                fputs($connect, "POST /iWsService HTTP/1.0" . $newLine);
+                fputs($connect, "Content-Type: text/xml" . $newLine);
+                fputs($connect, "Content-Length: " . strlen($soap_request) . $newLine . $newLine);
+                fputs($connect, $soap_request . $newLine);
+
+                $buffer = "";
+                while ($response = fgets($connect, 1024)) {
+                    $buffer = $buffer . $response;
+                }
+                fclose($connect);
+
+                // Check if it's a fingerprint device
+                if (strpos($buffer, '<GetDeviceInfoResponse>') !== false) {
+                    $found = true;
+                    $newIp = $testIp;
+                    break;
+                }
+            }
+        }
+
+        // If device found, update the IP
+        if ($found && $newIp) {
+            $this->alamat_ip = $newIp;
+            $this->save();
+
+            return [
+                'success' => true,
+                'message' => "IP berhasil diperbarui dari $originalIp menjadi $newIp",
+                'old_ip' => $originalIp,
+                'new_ip' => $newIp
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => "Gagal mendeteksi mesin absensi di subnet $subnet",
+            'old_ip' => $originalIp,
+            'new_ip' => null
+        ];
+    }
+
+    /**
+     * Check if the machine is online and accessible.
+     *
+     * @return bool
+     */
+    public function isOnline()
+    {
+        $connect = @fsockopen($this->alamat_ip, "80", $errno, $errstr, 1);
+        if ($connect) {
+            fclose($connect);
+            return true;
+        }
+        return false;
+    }
 }

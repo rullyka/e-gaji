@@ -92,6 +92,9 @@
                                 <a href="{{ route('mesinabsensis.test-connection', $mesin) }}" class="btn btn-primary btn-sm" title="Test Koneksi">
                                     <i class="fas fa-network-wired"></i>
                                 </a>
+                                <a href="{{ route('mesinabsensis.auto-detect-ip', $mesin) }}" class="btn btn-warning btn-sm" title="Auto Detect IP">
+                                    <i class="fas fa-magic"></i> Detect IP
+                                </a>
 
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -120,6 +123,10 @@
                                         </a>
                                         <a class="dropdown-item" href="#" data-toggle="modal" data-target="#syncAllModal" data-id="{{ $mesin->id }}">
                                             <i class="mr-1 fas fa-sync"></i> Sinkronisasi Semua Karyawan
+                                        </a>
+                                        <a class="dropdown-item" href="#" data-toggle="modal" data-target="#cloneUsersModal" data-id="{{ $mesin->id }}" data-nama="{{ $mesin->nama }}">
+                                            <i class="mr-1 fas fa-clone"></i> Clone User & Fingerprint
+                                            <span class="badge badge-info">Clone</span>
                                         </a>
                                     </div>
                                 </div>
@@ -244,6 +251,75 @@
         </div>
     </div>
 </div>
+
+
+
+<!-- Modal Clone Users -->
+<div class="modal fade" id="cloneUsersModal" tabindex="-1" role="dialog" aria-labelledby="cloneUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form action="{{ route('mesinabsensis.clone-users') }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cloneUsersModalLabel">Clone User & Fingerprint</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="mr-1 fas fa-info-circle"></i> Fitur ini akan mengkloning user beserta sidik jari dari mesin sumber ke mesin tujuan.
+                        <p class="mt-2 mb-0">Berguna untuk skenario di mana karyawan absen masuk di satu mesin dan absen pulang di mesin lainnya.</p>
+                    </div>
+
+                    <input type="hidden" name="source_machine_id" id="sourceMachineId">
+
+                    <div class="form-group">
+                        <label>Mesin Sumber</label>
+                        <input type="text" class="form-control" id="sourceMachineName" readonly>
+                        <small class="form-text text-muted">Mesin yang datanya akan diclone</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="target_machine_id">Mesin Tujuan <span class="text-danger">*</span></label>
+                        <select class="form-control" id="targetMachineId" name="target_machine_id" required>
+                            <option value="">-- Pilih Mesin Tujuan --</option>
+                            @foreach($mesinAbsensis as $targetMesin)
+                            <option value="{{ $targetMesin->id }}">{{ $targetMesin->nama }} ({{ $targetMesin->alamat_ip }})</option>
+                            @endforeach
+                        </select>
+                        <small class="form-text text-muted">Mesin yang akan menerima data user dan sidik jari</small>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="includeFingerprint" name="include_fingerprint" value="1" checked>
+                            <label class="custom-control-label" for="includeFingerprint">Termasuk data sidik jari</label>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="mr-1 fas fa-exclamation-triangle"></i> Perhatian!
+                        <p class="mb-0">Proses ini memerlukan waktu tergantung jumlah user. Pastikan kedua mesin dalam kondisi menyala dan terhubung dengan jaringan.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="confirmClone" name="confirm" value="1" required>
+                            <label class="custom-control-label" for="confirmClone">Saya mengerti dan ingin melanjutkan</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnClone" disabled>
+                        <i class="mr-1 fas fa-clone"></i> Clone User & Fingerprint
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @stop
 
 @section('css')
@@ -308,6 +384,36 @@
         $('#confirmSync').on('change', function() {
             $('#btnSyncAll').prop('disabled', !this.checked);
         });
+    });
+
+
+    // Tambahkan ke dalam script yang sudah ada
+    $('#cloneUsersModal').on('show.bs.modal', function(event) {
+        var button = $(event.relatedTarget);
+        var mesinId = button.data('id');
+        var mesinNama = button.data('nama');
+
+        $('#sourceMachineId').val(mesinId);
+        $('#sourceMachineName').val(mesinNama);
+
+        // Hapus mesin sumber dari opsi tujuan
+        $('#targetMachineId option').show();
+        $('#targetMachineId option[value="' + mesinId + '"]').hide();
+        $('#targetMachineId').val('');
+
+        // Reset checkbox
+        $('#confirmClone').prop('checked', false);
+        $('#btnClone').prop('disabled', true);
+    });
+
+    // Enable/disable clone button based on checkbox
+    $('#confirmClone').on('change', function() {
+        $('#btnClone').prop('disabled', !this.checked || $('#targetMachineId').val() === '');
+    });
+
+    // Validasi pemilihan mesin tujuan
+    $('#targetMachineId').on('change', function() {
+        $('#btnClone').prop('disabled', !$('#confirmClone').is(':checked') || $(this).val() === '');
     });
 
 </script>

@@ -21,6 +21,10 @@ class KaryawanController extends Controller
     /**
      * Menampilkan daftar karyawan
      */
+    public function __construct()
+    {
+        $this->middleware('auth')->except(['getAllActive','search']); // Biarkan yang ini tanpa auth
+    }
     public function index()
     {
         $karyawans = Karyawan::with(['departemen', 'bagian', 'jabatan', 'profesi', 'programStudi'])
@@ -442,13 +446,13 @@ class KaryawanController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('q');
-
+        console.log($query);
         $karyawans = Karyawan::where(function ($queryBuilder) use ($query) {
                 $queryBuilder->where('nama_karyawan', 'like', "%{$query}%")
                     ->orWhere('nik', 'like', "%{$query}%")
                     ->orWhere('nik_karyawan', 'like', "%{$query}%");
             })
-            ->whereNull('tahun_keluar') // Only active employees
+            // ->whereNull('tahun_keluar') // Only active employees
             ->with('bagian') // Include bagian relationship
             ->limit(10)
             ->get();
@@ -458,4 +462,25 @@ class KaryawanController extends Controller
             'data' => $karyawans
         ]);
     }
+
+    public function getAllActive()
+{
+    try {
+        $karyawans = Karyawan::whereNull('tahun_keluar')
+            ->orderBy('id', 'asc')
+            ->get(['id', 'nik_karyawan', 'nama_karyawan']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $karyawans
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+
 }
