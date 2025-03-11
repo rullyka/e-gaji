@@ -7,6 +7,13 @@ use App\Models\Departemen;
 use App\Models\Karyawan;
 use App\Models\Penggajian;
 use App\Models\PeriodeGaji;
+
+use App\Models\Absensi;
+use App\Models\Harilibur;
+use App\Models\Lembur;
+use App\Models\CutiKaryawan;
+use App\Models\Potongan;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

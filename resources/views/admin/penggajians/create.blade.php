@@ -108,7 +108,7 @@
                     </div>
                 </div>
                 <div class="card-body">
-                    <form id="createPenggajianForm" action="{{ route('penggajian.store') }}" method="POST">
+                    <form id="createPenggajianForm" action="{{ route('penggajian.review') }}" method="POST">
                         @csrf
                         <input type="hidden" name="periode_id" id="form_periode_id">
                         <div class="table-responsive">
@@ -294,10 +294,10 @@
 
                         if (karyawans.length === 0) {
                             tableBody.append(`
-                                    <tr>
-                                        <td colspan="9" class="text-center">Tidak ada karyawan yang belum diproses pada periode ini</td>
-                                    </tr>
-                                `);
+                                <tr>
+                                    <td colspan="9" class="text-center">Tidak ada karyawan yang belum diproses pada periode ini</td>
+                                </tr>
+                            `);
                         } else {
                             // Populate table with karyawan data
                             karyawans.forEach(function(karyawan) {
@@ -306,31 +306,31 @@
                                 const formattedGajiPokok = formatRupiah(gajiPokok);
 
                                 tableBody.append(`
-                                        <tr>
-                                            <td class="text-center">
-                                                <div class="icheck-primary">
-                                                    <input type="checkbox" class="karyawan-checkbox" id="karyawan_${karyawanId}" name="karyawan_ids[]" value="${karyawanId}">
-                                                    <label for="karyawan_${karyawanId}"></label>
-                                                </div>
-                                            </td>
-                                            <td>${karyawan.nik || '-'}</td>
-                                            <td>${karyawan.nama_karyawan || '-'}</td>
-                                            <td>${karyawan.departemen ? karyawan.departemen.name_departemen : '-'}</td>
-                                            <td>${karyawan.bagian ? karyawan.bagian.name_bagian : '-'}</td>
-                                            <td>${karyawan.jabatan ? karyawan.jabatan.name_jabatan : '-'}</td>
-                                            <td>
-                                                <span class="badge badge-${getStatusBadgeClass(karyawan.status)}">
-                                                    ${karyawan.status || '-'}
-                                                </span>
-                                            </td>
-                                            <td>${formattedGajiPokok}</td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-sm btn-info btn-view-detail" data-id="${karyawanId}" data-karyawan='${JSON.stringify(karyawan)}'>
-                                                    <i class="fas fa-eye"></i> Detail
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `);
+                                    <tr>
+                                        <td class="text-center">
+                                            <div class="icheck-primary">
+                                                <input type="checkbox" class="karyawan-checkbox" id="karyawan_${karyawanId}" name="karyawan_ids[]" value="${karyawanId}">
+                                                <label for="karyawan_${karyawanId}"></label>
+                                            </div>
+                                        </td>
+                                        <td>${karyawan.nik || '-'}</td>
+                                        <td>${karyawan.nama_karyawan || '-'}</td>
+                                        <td>${karyawan.departemen ? karyawan.departemen.name_departemen : '-'}</td>
+                                        <td>${karyawan.bagian ? karyawan.bagian.name_bagian : '-'}</td>
+                                        <td>${karyawan.jabatan ? karyawan.jabatan.name_jabatan : '-'}</td>
+                                        <td>
+                                            <span class="badge badge-${getStatusBadgeClass(karyawan.status)}">
+                                                ${karyawan.status || '-'}
+                                            </span>
+                                        </td>
+                                        <td>${formattedGajiPokok}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-info btn-view-detail" data-id="${karyawanId}" data-karyawan='${JSON.stringify(karyawan)}'>
+                                                <i class="fas fa-eye"></i> Detail
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `);
                             });
 
                             // Initialize DataTable
@@ -459,7 +459,10 @@
                 const checkbox = $(`#karyawan_${selectedKaryawanId}`);
                 checkbox.prop('checked', true);
 
-                // Submit form hanya untuk karyawan ini
+                // Ubah action form ke route review
+                $('#createPenggajianForm').attr('action', "{{ route('penggajian.review') }}");
+
+                // Submit form untuk review
                 $('#createPenggajianForm').submit();
             } else {
                 Swal.fire({
@@ -540,7 +543,7 @@
             $('.karyawan-checkbox').prop('checked', $(this).prop('checked'));
         });
 
-        // Validasi sebelum submit
+        // Validasi sebelum submit dan arahkan ke review
         $('#createPenggajianForm').on('submit', function(e) {
             const checkedKaryawans = $('.karyawan-checkbox:checked').length;
 
@@ -552,6 +555,11 @@
                     , icon: 'error'
                 });
                 return false;
+            }
+
+            // Ubah action ke review jika belum
+            if ($(this).attr('action') !== "{{ route('penggajian.review') }}") {
+                $(this).attr('action', "{{ route('penggajian.review') }}");
             }
 
             return true;
