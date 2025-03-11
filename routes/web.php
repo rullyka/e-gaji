@@ -278,6 +278,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('penggajian-report/by-period', [PenggajianController::class, 'reportByPeriod'])->name('penggajian.reportByPeriod');
     Route::get('penggajian-report/by-department', [PenggajianController::class, 'reportByDepartment'])->name('penggajian.reportByDepartment');
     Route::get('penggajian-report/export-excel', [PenggajianController::class, 'exportExcel'])->name('penggajian.exportExcel');
+
+    Route::post('penggajian/review', [PenggajianController::class, 'review'])->name('penggajian.review');
+    Route::post('penggajian/process', [PenggajianController::class, 'process'])->name('penggajian.process');
 });
 
 
