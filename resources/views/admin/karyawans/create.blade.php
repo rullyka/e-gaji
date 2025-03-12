@@ -251,11 +251,11 @@
                                 </div>
                                 @enderror
                             </div>
-
-                            <div class="form-group">
-                                <label for="id_programstudi">Jurusan / Prodi</label>
+                
+                            <div class="form-group" id="programstudi_group" style="display: none;">
+                                <label for="id_programstudi">Prodi / Jurusan</label>
                                 <select class="form-control select2 @error('id_programstudi') is-invalid @enderror" id="id_programstudi" name="id_programstudi">
-                                    <option value="">-- Pilih Jurusan / Prodi --</option>
+                                    <option value="">-- Pilih Prodi / Jurusan --</option>
                                     @foreach($programStudis as $programStudi)
                                     <option value="{{ $programStudi->id }}" {{ old('id_programstudi') == $programStudi->id ? 'selected' : '' }}>
                                         {{ $programStudi->name_programstudi }}
@@ -559,6 +559,28 @@
         // Initialize custom file input
         bsCustomFileInput.init();
 
+        // Handle pendidikan_terakhir change to show/hide program studi
+        $('#pendidikan_terakhir').on('change', function() {
+            var pendidikan = $(this).val();
+            var programStudiGroup = $('#programstudi_group');
+            
+            // Show program studi field only for education levels higher than SMP
+            if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS') {
+                programStudiGroup.show();
+                // Make it required for higher education
+                $('#id_programstudi').attr('required', true);
+                // Update label to show it's required
+                programStudiGroup.find('label').html('Prodi / Jurusan <span class="text-danger">*</span>');
+            } else {
+                programStudiGroup.hide();
+                $('#id_programstudi').attr('required', false);
+                $('#id_programstudi').val('').trigger('change');
+            }
+        });
+        
+        // Trigger on page load to set initial state
+        $('#pendidikan_terakhir').trigger('change');
+
         // Cache DOM elements
         var departemenSelect = $('#id_departemen');
         var bagianFormGroup = $('#id_bagian').closest('.form-group');
@@ -774,6 +796,16 @@
                     if (!validateNikKk()) {
                         valid = false;
                     }
+                    
+                    // Validate program studi if pendidikan is higher than SMP
+                    var pendidikan = $('#pendidikan_terakhir').val();
+                    if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS') {
+                        if (!$('#id_programstudi').val()) {
+                            $('#id_programstudi').addClass('is-invalid');
+                            $('#id_programstudi').closest('.form-group').find('.select2-selection').addClass('border-danger');
+                            valid = false;
+                        }
+                    }
                 }
 
                 // Special validations for step 2 (Data Pekerjaan)
@@ -841,6 +873,14 @@
                 alert('Silakan pilih Bagian untuk Departemen yang dipilih.');
                 return false;
             }
+            
+            // Check if program studi is required and filled
+            var pendidikan = $('#pendidikan_terakhir').val();
+            if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS' && !$('#id_programstudi').val()) {
+                $('#smartwizard').smartWizard("goToStep", 2); // Go to step 3
+                alert('Silakan pilih Prodi / Jurusan untuk pendidikan yang dipilih.');
+                return false;
+            }
 
             // If all validations pass, submit the form
             form.submit();
@@ -879,8 +919,8 @@
             }
         });
 
-        // Get NIK Karyawan via Ajax
-        $('#refreshNik').on('click', function() {
+                // Get NIK Karyawan via Ajax
+                $('#refreshNik').on('click', function() {
             $(this).prop('disabled', true); // Disable tombol agar tidak diklik berkali-kali
             $(this).find('.spinner-grow').removeClass('d-none'); // Tampilkan spinner
             $(this).find('.btn-text').text('Loading...'); // Ubah teks tombol
@@ -902,7 +942,28 @@
                 }
             });
         });
-    });
 
+        // Handle pendidikan_terakhir change to show/hide program studi
+        $('#pendidikan_terakhir').on('change', function() {
+            var pendidikan = $(this).val();
+            var programStudiGroup = $('#programstudi_group');
+            
+            // Show program studi field only for education levels higher than SMP
+            if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS') {
+                programStudiGroup.show();
+                // Make it required for higher education
+                $('#id_programstudi').attr('required', true);
+                // Update label to show it's required
+                programStudiGroup.find('label').html('Prodi / Jurusan <span class="text-danger">*</span>');
+            } else {
+                programStudiGroup.hide();
+                $('#id_programstudi').attr('required', false);
+                $('#id_programstudi').val('').trigger('change');
+            }
+        });
+        
+        // Trigger on page load to set initial state
+        $('#pendidikan_terakhir').trigger('change');
+    });
 </script>
 @stop

@@ -12,74 +12,77 @@ use Illuminate\Validation\ValidationException;
 class LoginRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Menentukan apakah pengguna diizinkan untuk membuat permintaan ini.
      */
     public function authorize(): bool
     {
-        return true;
+        return true; // Semua pengguna diizinkan untuk login
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Mendapatkan aturan validasi yang berlaku untuk permintaan.
      *
      * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email'], // Email harus diisi, berupa string, dan format email valid
+            'password' => ['required', 'string'], // Password harus diisi dan berupa string
         ];
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Mencoba mengautentikasi kredensial dari permintaan.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function authenticate(): void
     {
-        $this->ensureIsNotRateLimited();
+        $this->ensureIsNotRateLimited(); // Pastikan tidak melebihi batas percobaan login
 
+        // Coba login dengan email dan password
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey()); // Catat percobaan gagal
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'email' => trans('auth.failed'), // Tampilkan pesan error
             ]);
         }
 
-        RateLimiter::clear($this->throttleKey());
+        RateLimiter::clear($this->throttleKey()); // Bersihkan catatan percobaan jika berhasil
     }
 
     /**
-     * Ensure the login request is not rate limited.
+     * Memastikan permintaan login tidak melebihi batas percobaan.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
+        // Jika belum melebihi 5 percobaan, lanjutkan
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
-        event(new Lockout($this));
+        event(new Lockout($this)); // Kirim event Lockout
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = RateLimiter::availableIn($this->throttleKey()); // Dapatkan waktu tunggu dalam detik
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
                 'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
+                'minutes' => ceil($seconds / 60), // Konversi detik ke menit
             ]),
         ]);
     }
 
     /**
-     * Get the rate limiting throttle key for the request.
+     * Mendapatkan kunci throttle untuk pembatasan percobaan login.
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        // Buat kunci unik berdasarkan email dan IP address
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }

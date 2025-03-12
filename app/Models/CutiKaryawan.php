@@ -2,44 +2,42 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
+use App\Models\Mastercuti;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CutiKaryawan extends Model
 {
     use HasFactory, HasUuids;
 
+    // Atribut yang dapat diisi secara massal
     protected $fillable = [
-        'id_karyawan',
-        'jenis_cuti',
-        'tanggal_mulai_cuti',
-        'tanggal_akhir_cuti',
-        'jumlah_hari_cuti',
-        'cuti_disetujui',
-        'master_cuti_id',
-        'bukti',
-        'id_supervisor',
-        'status_acc',
-        'keterangan_tolak',
-        'tanggal_approval',
-        'approved_by',
+        'id_karyawan', // ID karyawan yang mengajukan cuti
+        'jenis_cuti', // Jenis cuti yang diajukan
+        'tanggal_mulai_cuti', // Tanggal mulai cuti
+        'tanggal_akhir_cuti', // Tanggal akhir cuti
+        'jumlah_hari_cuti', // Jumlah hari cuti yang diajukan
+        'cuti_disetujui', // Jumlah hari cuti yang disetujui
+        'master_cuti_id', // ID master cuti yang terkait
+        'bukti', // Bukti pendukung cuti
+        'id_supervisor', // ID supervisor yang menyetujui
+        'status_acc', // Status persetujuan cuti
+        'keterangan_tolak', // Keterangan jika cuti ditolak
+        'tanggal_approval', // Tanggal persetujuan
+        'approved_by', // ID karyawan yang menyetujui
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
+    // Atribut yang harus di-cast ke tipe data tertentu
     protected $casts = [
-        'tanggal_mulai_cuti' => 'date',
-        'tanggal_akhir_cuti' => 'date',
-        'tanggal_approval' => 'datetime',
+        'tanggal_mulai_cuti' => 'date', // Cast tanggal mulai cuti ke tipe date
+        'tanggal_akhir_cuti' => 'date', // Cast tanggal akhir cuti ke tipe date
+        'tanggal_approval' => 'datetime', // Cast tanggal approval ke tipe datetime
     ];
 
     /**
-     * Get the karyawan that owns the cuti.
+     * Mendapatkan karyawan yang memiliki cuti ini.
      */
     public function karyawan()
     {
@@ -47,15 +45,15 @@ class CutiKaryawan extends Model
     }
 
     /**
-     * Get the master cuti that owns the cuti karyawan.
+     * Mendapatkan master cuti yang terkait dengan cuti karyawan ini.
      */
     public function masterCuti()
     {
-        return $this->belongsTo(Mastershift::class, 'master_cuti_id');
+        return $this->belongsTo(Mastercuti::class, 'master_cuti_id');
     }
 
     /**
-     * Get the supervisor that approves the cuti.
+     * Mendapatkan supervisor yang menyetujui cuti ini.
      */
     public function supervisor()
     {
@@ -63,7 +61,7 @@ class CutiKaryawan extends Model
     }
 
     /**
-     * Get the approver that approves the cuti.
+     * Mendapatkan approver yang menyetujui cuti ini.
      */
     public function approver()
     {
@@ -71,7 +69,7 @@ class CutiKaryawan extends Model
     }
 
     /**
-     * Get the full path to the bukti file
+     * Mendapatkan URL lengkap untuk file bukti
      */
     public function getBuktiUrlAttribute()
     {
@@ -82,7 +80,7 @@ class CutiKaryawan extends Model
     }
 
     /**
-     * Get the formatted tanggal_mulai_cuti
+     * Mendapatkan tanggal mulai cuti yang sudah diformat
      */
     public function getTanggalMulaiFormattedAttribute()
     {
@@ -90,7 +88,7 @@ class CutiKaryawan extends Model
     }
 
     /**
-     * Get the formatted tanggal_akhir_cuti
+     * Mendapatkan tanggal akhir cuti yang sudah diformat
      */
     public function getTanggalAkhirFormattedAttribute()
     {
@@ -98,7 +96,7 @@ class CutiKaryawan extends Model
     }
 
     /**
-     * Get class for status badge
+     * Mendapatkan kelas untuk badge status
      */
     public function getStatusBadgeClassAttribute()
     {

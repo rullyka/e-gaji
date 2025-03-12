@@ -8,19 +8,30 @@ use App\Models\Jabatan;
 
 class JabatanController extends Controller
 {
+    /**
+     * Menampilkan daftar semua jabatan
+     */
     public function index()
     {
+        // Ambil semua data jabatan dan urutkan berdasarkan nama
         $jabatans = Jabatan::orderBy('name_jabatan')->get();
         return view('admin.jabatans.index', compact('jabatans'));
     }
 
+    /**
+     * Menampilkan form untuk membuat jabatan baru
+     */
     public function create()
     {
         return view('admin.jabatans.create');
     }
 
+    /**
+     * Menyimpan data jabatan baru ke database
+     */
     public function store(Request $request)
     {
+        // Validasi input dari form
         $request->validate([
             'name_jabatan' => 'required|string|max:255|unique:jabatans,name_jabatan',
             'gaji_pokok' => 'numeric|min:0',
@@ -30,7 +41,7 @@ class JabatanController extends Controller
             'uang_lembur_libur' => 'numeric|min:0',
         ]);
 
-        // Clean the monetary values to store as integers
+        // Bersihkan format nilai uang dan simpan sebagai integer
         $data = $request->all();
         $data['gaji_pokok'] = $this->cleanMoneyFormat($request->gaji_pokok);
         $data['premi'] = $this->cleanMoneyFormat($request->premi);
@@ -38,24 +49,36 @@ class JabatanController extends Controller
         $data['uang_lembur_biasa'] = $this->cleanMoneyFormat($request->uang_lembur_biasa);
         $data['uang_lembur_libur'] = $this->cleanMoneyFormat($request->uang_lembur_libur);
 
+        // Simpan data jabatan ke database
         Jabatan::create($data);
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('jabatans.index')
             ->with('success', 'Jabatan berhasil ditambahkan');
     }
 
+    /**
+     * Menampilkan detail jabatan tertentu
+     */
     public function show(Jabatan $jabatan)
     {
         return view('admin.jabatans.show', compact('jabatan'));
     }
 
+    /**
+     * Menampilkan form untuk mengedit jabatan
+     */
     public function edit(Jabatan $jabatan)
     {
         return view('admin.jabatans.edit', compact('jabatan'));
     }
 
+    /**
+     * Memperbarui data jabatan di database
+     */
     public function update(Request $request, Jabatan $jabatan)
     {
+        // Validasi input dari form edit
         $request->validate([
             'name_jabatan' => 'required|string|max:255|unique:jabatans,name_jabatan,'.$jabatan->id,
             'gaji_pokok' => 'required|numeric|min:0',
@@ -65,7 +88,7 @@ class JabatanController extends Controller
             'uang_lembur_libur' => 'required|numeric|min:0',
         ]);
 
-        // Clean the monetary values to store as integers
+        // Bersihkan format nilai uang dan simpan sebagai integer
         $data = $request->all();
         $data['gaji_pokok'] = $this->cleanMoneyFormat($request->gaji_pokok);
         $data['premi'] = $this->cleanMoneyFormat($request->premi);
@@ -73,12 +96,17 @@ class JabatanController extends Controller
         $data['uang_lembur_biasa'] = $this->cleanMoneyFormat($request->uang_lembur_biasa);
         $data['uang_lembur_libur'] = $this->cleanMoneyFormat($request->uang_lembur_libur);
 
+        // Update data jabatan di database
         $jabatan->update($data);
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('jabatans.index')
             ->with('success', 'Jabatan berhasil diupdate');
     }
 
+    /**
+     * Menghapus data jabatan dari database
+     */
     public function destroy(Jabatan $jabatan)
     {
         // Check for relationships before deleting
@@ -88,20 +116,26 @@ class JabatanController extends Controller
         //         ->with('error', 'Hapus semua karyawan dengan jabatan ini terlebih dahulu');
         // }
 
+        // Hapus data jabatan
         $jabatan->delete();
+
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('jabatans.index')
             ->with('success', 'Jabatan berhasil dihapus');
     }
 
     /**
-     * Clean money format by removing non-numeric characters
+     * Membersihkan format uang dengan menghapus karakter non-numerik
+     *
+     * @param mixed $value Nilai uang dalam format string
+     * @return int Nilai uang dalam format integer
      */
     private function cleanMoneyFormat($value)
     {
-        // Remove any non-numeric characters except for the decimal point
+        // Hapus karakter non-numerik kecuali titik desimal
         $cleanValue = preg_replace('/[^0-9.]/', '', $value);
 
-        // Convert to integer (cents)
+        // Konversi ke integer
         return (int) $cleanValue;
     }
 }

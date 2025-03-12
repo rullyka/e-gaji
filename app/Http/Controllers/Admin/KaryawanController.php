@@ -2,19 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Karyawan;
-use App\Models\Departemen;
+use Carbon\Carbon;
+use App\Models\User;
 use App\Models\Bagian;
 use App\Models\Jabatan;
 use App\Models\Profesi;
-use App\Models\ProgramStudi;
-use Illuminate\Support\Facades\Storage;
+use App\Models\Karyawan;
+use App\Models\Departemen;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
+use App\Models\ProgramStudi;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Models\CutiKaryawan;
 
 class KaryawanController extends Controller
 {
@@ -23,7 +25,7 @@ class KaryawanController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth')->except(['getAllActive','search']); // Biarkan yang ini tanpa auth
+        $this->middleware('auth')->except(['getAllActive', 'search']); // Biarkan yang ini tanpa auth
     }
     public function index()
     {
@@ -247,71 +249,71 @@ class KaryawanController extends Controller
      * Rules validasi untuk karyawan, dengan validasi kondisional untuk bagian
      */
     protected function getValidationRules(Request $request, $id = null)
-{
-    $uniqueNikRule = 'required|string|max:255|unique:karyawans,nik_karyawan';
+    {
+        $uniqueNikRule = 'required|string|max:255|unique:karyawans,nik_karyawan';
 
-    // If updating existing record, exclude current ID from unique check
-    if ($id) {
-        $uniqueNikRule .= ',' . $id;
-    }
+        // If updating existing record, exclude current ID from unique check
+        if ($id) {
+            $uniqueNikRule .= ',' . $id;
+        }
 
-    $rules = [
-        'nik_karyawan'   => $uniqueNikRule,
-        'nama_karyawan'  => 'required|string|max:255',
-        'foto_karyawan'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        'statuskaryawan' => 'required|in:Bulanan,Harian,Borongan',
-        'id_departemen'  => 'nullable|exists:departemens,id',
-        'tgl_awalmmasuk' => 'required|date',
-        'tahun_keluar'   => 'nullable|date',
-        'id_jabatan'     => 'nullable|exists:jabatans,id',
-        'id_profesi'     => 'nullable|exists:profesis,id',
-        'nik'            => [
-            'required',
-            'numeric',
-            'digits_between:1,16',
-            function ($attribute, $value, $fail) use ($request) {
-                if ($value == $request->kk) {
-                    $fail('NIK dan Nomor KK tidak boleh sama.');
-                }
-            },
-        ],
-        'kk' => [
-            'required',
-            'numeric',
-            'digits_between:1,16',
-            function ($attribute, $value, $fail) use ($request) {
-                if ($value == $request->nik) {
-                    $fail('Nomor KK dan NIK tidak boleh sama.');
-                }
-            },
-        ],
-        'statuskawin'         => 'required|in:Lajang,Kawin,Cerai Hidup,Cerai Mati',
-        'pendidikan_terakhir' => 'required|in:SD/MI,SMP/MTS,SMA/SMK/MA,S1,S2,S3,Lainnya',
-        'id_programstudi'     => 'nullable|exists:program_studis,id',
-        'no_hp'               => 'required|string|max:16',
-        'ortu_bapak'          => 'required|string|max:255',
-        'ortu_ibu'            => 'required|string|max:255',
-        'ukuran_kemeja'       => 'required|in:S,M,L,XL,XXL,XXXL',
-        'ukuran_celana'       => 'required|string|max:5',
-        'ukuran_sepatu'       => 'required|string|max:5',
-        'jml_anggotakk'       => 'required|string|max:5',
-        'upload_ktp'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    ];
+        $rules = [
+            'nik_karyawan'   => $uniqueNikRule,
+            'nama_karyawan'  => 'required|string|max:255',
+            'foto_karyawan'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'statuskaryawan' => 'required|in:Bulanan,Harian,Borongan',
+            'id_departemen'  => 'nullable|exists:departemens,id',
+            'tgl_awalmmasuk' => 'required|date',
+            'tahun_keluar'   => 'nullable|date',
+            'id_jabatan'     => 'nullable|exists:jabatans,id',
+            'id_profesi'     => 'nullable|exists:profesis,id',
+            'nik'            => [
+                'required',
+                'numeric',
+                'digits_between:1,16',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value == $request->kk) {
+                        $fail('NIK dan Nomor KK tidak boleh sama.');
+                    }
+                },
+            ],
+            'kk' => [
+                'required',
+                'numeric',
+                'digits_between:1,16',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value == $request->nik) {
+                        $fail('Nomor KK dan NIK tidak boleh sama.');
+                    }
+                },
+            ],
+            'statuskawin'         => 'required|in:Lajang,Kawin,Cerai Hidup,Cerai Mati',
+            'pendidikan_terakhir' => 'required|in:SD/MI,SMP/MTS,SMA/SMK/MA,S1,S2,S3,Lainnya',
+            'id_programstudi'     => 'nullable|exists:program_studis,id',
+            'no_hp'               => 'required|string|max:16',
+            'ortu_bapak'          => 'required|string|max:255',
+            'ortu_ibu'            => 'required|string|max:255',
+            'ukuran_kemeja'       => 'required|in:S,M,L,XL,XXL,XXXL',
+            'ukuran_celana'       => 'required|string|max:5',
+            'ukuran_sepatu'       => 'required|string|max:5',
+            'jml_anggotakk'       => 'required|string|max:5',
+            'upload_ktp'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ];
 
-    // Validasi kondisional untuk id_bagian
-    if ($request->id_departemen) {
-        $departemen = Departemen::find($request->id_departemen);
-        if ($departemen && $departemen->hasBagians()) {
-            $rules['id_bagian'] = 'required|exists:bagians,id';
+        // Validasi kondisional untuk id_bagian
+        if ($request->id_departemen) {
+            $departemen = Departemen::find($request->id_departemen);
+            if ($departemen && $departemen->hasBagians()) {
+                $rules['id_bagian'] = 'required|exists:bagians,id';
+            } else {
+                $rules['id_bagian'] = 'nullable|exists:bagians,id';
+            }
         } else {
             $rules['id_bagian'] = 'nullable|exists:bagians,id';
         }
-    } else {
-        $rules['id_bagian'] = 'nullable|exists:bagians,id';
-    }
 
-    return $rules;
-}
+        return $rules;
+    }
 
     /**
      * Pesan validasi dalam bahasa Indonesia
@@ -445,42 +447,79 @@ class KaryawanController extends Controller
 
     public function search(Request $request)
     {
-        $query = $request->input('q');
-        console.log($query);
-        $karyawans = Karyawan::where(function ($queryBuilder) use ($query) {
-                $queryBuilder->where('nama_karyawan', 'like', "%{$query}%")
-                    ->orWhere('nik', 'like', "%{$query}%")
-                    ->orWhere('nik_karyawan', 'like', "%{$query}%");
-            })
-            // ->whereNull('tahun_keluar') // Only active employees
-            ->with('bagian') // Include bagian relationship
-            ->limit(10)
-            ->get();
+        // $query = $request->input('q');
+        // console . log($query);
+        // $karyawans = Karyawan::where(function ($queryBuilder) use ($query) {
+        //     $queryBuilder->where('nama_karyawan', 'like', "%{$query}%")
+        //         ->orWhere('nik', 'like', "%{$query}%")
+        //         ->orWhere('nik_karyawan', 'like', "%{$query}%");
+        // })
+        //     // ->whereNull('tahun_keluar') // Only active employees
+        //     ->with('bagian') // Include bagian relationship
+        //     ->limit(10)
+        //     ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $karyawans
-        ]);
+        // return response()->json([
+        //     'success' => true,
+        //     'data' => $karyawans
+        // ]);
     }
 
     public function getAllActive()
-{
-    try {
-        $karyawans = Karyawan::whereNull('tahun_keluar')
-            ->orderBy('id', 'asc')
-            ->get(['id', 'nik_karyawan', 'nama_karyawan']);
+    {
+        try {
+            $karyawans = Karyawan::whereNull('tahun_keluar')
+                ->orderBy('id', 'asc')
+                ->get(['id', 'nik_karyawan', 'nama_karyawan']);
 
-        return response()->json([
-            'success' => true,
-            'data' => $karyawans
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage()
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $karyawans
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
-}
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
+    public function approval(CutiKaryawan $cuti_karyawan)
+    {
+        // Your approval logic here
+        return view('admin.cuti_karyawans.approval', compact('cuti_karyawan'));
+    }
 
+    public function resign(Request $request, Karyawan $karyawan)
+    {
+        $request->validate([
+            'tanggal_resign' => 'required|date',
+        ]);
+
+        try {
+            // Use update method to directly update the record in the database
+            $updated = $karyawan->update([
+                'tahun_keluar' => $request->tanggal_resign
+            ]);
+
+            if (!$updated) {
+                throw new \Exception("Gagal mengupdate data karyawan");
+            }
+
+            return redirect()->route('karyawans.index')
+                ->with('success', 'Status karyawan berhasil diubah menjadi resign.');
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \Log::error('Failed to update karyawan resign status: ' . $e->getMessage());
+
+            // Redirect back with the actual error message in the alert
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal mengubah status karyawan: ' . $e->getMessage());
+        }
+    }
 }

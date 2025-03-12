@@ -13,37 +13,37 @@ class MesinAbsensi extends Model
     use HasFactory, SoftDeletes;
 
     /**
-     * The table associated with the model.
+     * Tabel yang terkait dengan model.
      *
      * @var string
      */
     protected $table = 'mesinabsensis';
 
     /**
-     * The attributes that are mass assignable.
+     * Atribut yang dapat diisi secara massal.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'nama',
-        'alamat_ip',
-        'kunci_komunikasi',
-        'lokasi',
-        'status_aktif',
-        'keterangan'
+        'nama',              // Nama mesin absensi
+        'alamat_ip',         // Alamat IP mesin absensi
+        'kunci_komunikasi',  // Kunci untuk komunikasi dengan mesin
+        'lokasi',            // Lokasi fisik mesin absensi
+        'status_aktif',      // Status aktif/nonaktif mesin
+        'keterangan'         // Keterangan tambahan
     ];
 
     /**
-     * The attributes that should be cast.
+     * Atribut yang harus dikonversi ke tipe data tertentu.
      *
      * @var array<string, string>
      */
     protected $casts = [
-        'status_aktif' => 'boolean',
+        'status_aktif' => 'boolean',  // Konversi status_aktif ke tipe boolean
     ];
 
     /**
-     * Get the absensis that use this machine for check-in.
+     * Mendapatkan data absensi yang menggunakan mesin ini untuk check-in.
      */
     public function absensisMasuk()
     {
@@ -51,7 +51,7 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Get the absensis that use this machine for check-out.
+     * Mendapatkan data absensi yang menggunakan mesin ini untuk check-out.
      */
     public function absensisPulang()
     {
@@ -59,18 +59,18 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Get all karyawan registered in this machine
-     * This is done through the karyawan_mesinabsensi pivot table
+     * Mendapatkan semua karyawan yang terdaftar di mesin ini
+     * Dilakukan melalui tabel pivot karyawan_mesinabsensi
      */
     public function karyawans()
     {
         return $this->belongsToMany(Karyawan::class, 'karyawan_mesinabsensi', 'mesinabsensi_id', 'karyawan_id')
-                    ->withPivot('status_sync', 'sync_at')
-                    ->withTimestamps();
+            ->withPivot('status_sync', 'sync_at')
+            ->withTimestamps();
     }
 
     /**
-     * Get all registered karyawan that are synced successfully
+     * Mendapatkan semua karyawan terdaftar yang berhasil disinkronisasi
      */
     public function syncedKaryawans()
     {
@@ -78,7 +78,7 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Get all registered karyawan that failed to sync
+     * Mendapatkan semua karyawan terdaftar yang gagal disinkronisasi
      */
     public function failedSyncKaryawans()
     {
@@ -86,9 +86,9 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Test connection to the machine
+     * Menguji koneksi ke mesin
      *
-     * @return bool|string True if connected, error message otherwise
+     * @return bool|string True jika terhubung, pesan error jika tidak
      */
     public function testConnection()
     {
@@ -101,22 +101,25 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Get attendance logs from the machine
+     * Mendapatkan log absensi dari mesin
      *
-     * @return array|string Array of logs if successful, error message otherwise
+     * @return array|string Array log jika berhasil, pesan error jika tidak
      */
     public function getAttendanceLogs()
     {
         $connect = @fsockopen($this->alamat_ip, "80", $errno, $errstr, 1);
         if ($connect) {
+            // Membuat permintaan SOAP untuk mendapatkan log absensi
             $soap_request = "<GetAttLog><ArgComKey xsi:type=\"xsd:integer\">" . $this->kunci_komunikasi . "</ArgComKey><Arg><PIN xsi:type=\"xsd:integer\">All</PIN></Arg></GetAttLog>";
             $newLine = "\r\n";
 
+            // Mengirim permintaan HTTP
             fputs($connect, "POST /iWsService HTTP/1.0" . $newLine);
             fputs($connect, "Content-Type: text/xml" . $newLine);
             fputs($connect, "Content-Length: " . strlen($soap_request) . $newLine . $newLine);
             fputs($connect, $soap_request . $newLine);
 
+            // Membaca respons
             $buffer = "";
             while ($response = fgets($connect, 1024)) {
                 $buffer = $buffer . $response;
@@ -130,24 +133,27 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Upload user name to the machine
+     * Mengunggah nama pengguna ke mesin
      *
-     * @param string $userId User ID
-     * @param string $name User name
-     * @return string Result message
+     * @param string $userId ID pengguna
+     * @param string $name Nama pengguna
+     * @return string Pesan hasil
      */
     public function uploadName($userId, $name)
     {
         $connect = @fsockopen($this->alamat_ip, "80", $errno, $errstr, 1);
         if ($connect) {
+            // Membuat permintaan SOAP untuk mengatur info pengguna
             $soap_request = "<SetUserInfo><ArgComKey Xsi:type=\"xsd:integer\">" . $this->kunci_komunikasi . "</ArgComKey><Arg><PIN>" . $userId . "</PIN><Name>" . $name . "</Name></Arg></SetUserInfo>";
             $newLine = "\r\n";
 
+            // Mengirim permintaan HTTP
             fputs($connect, "POST /iWsService HTTP/1.0" . $newLine);
             fputs($connect, "Content-Type: text/xml" . $newLine);
             fputs($connect, "Content-Length: " . strlen($soap_request) . $newLine . $newLine);
             fputs($connect, $soap_request . $newLine);
 
+            // Membaca respons
             $buffer = "";
             while ($response = fgets($connect, 1024)) {
                 $buffer = $buffer . $response;
@@ -156,7 +162,7 @@ class MesinAbsensi extends Model
 
             $result = $this->parseDataBetween($buffer, "<Information>", "</Information>");
 
-            // Update registration if user exists in database
+            // Memperbarui status registrasi jika pengguna ada di database
             $karyawan = Karyawan::where('nik', $userId)->first();
             if ($karyawan) {
                 $success = strpos($result, 'successful') !== false || strpos($result, 'berhasil') !== false;
@@ -170,23 +176,26 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Delete user from the machine
+     * Menghapus pengguna dari mesin
      *
-     * @param string $userId User ID
-     * @return string Result message
+     * @param string $userId ID pengguna
+     * @return string Pesan hasil
      */
     public function deleteUser($userId)
     {
         $connect = @fsockopen($this->alamat_ip, "80", $errno, $errstr, 1);
         if ($connect) {
+            // Membuat permintaan SOAP untuk menghapus pengguna
             $soap_request = "<DeleteUser><ArgComKey Xsi:type=\"xsd:integer\">" . $this->kunci_komunikasi . "</ArgComKey><Arg><PIN>" . $userId . "</PIN></Arg></DeleteUser>";
             $newLine = "\r\n";
 
+            // Mengirim permintaan HTTP
             fputs($connect, "POST /iWsService HTTP/1.0" . $newLine);
             fputs($connect, "Content-Type: text/xml" . $newLine);
             fputs($connect, "Content-Length: " . strlen($soap_request) . $newLine . $newLine);
             fputs($connect, $soap_request . $newLine);
 
+            // Membaca respons
             $buffer = "";
             while ($response = fgets($connect, 1024)) {
                 $buffer = $buffer . $response;
@@ -195,7 +204,7 @@ class MesinAbsensi extends Model
 
             $result = $this->parseDataBetween($buffer, "<Information>", "</Information>");
 
-            // Update registration if user exists in database
+            // Memperbarui status registrasi jika pengguna ada di database
             $karyawan = Karyawan::where('nik', $userId)->first();
             if ($karyawan) {
                 $karyawan->unregisterFromMachine($this->id);
@@ -208,26 +217,30 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Sync all active employees to the machine
+     * Sinkronisasi semua karyawan aktif ke mesin
      *
-     * @return array Success and failure count, and detailed results
+     * @return array Jumlah sukses dan gagal, serta hasil detail
      */
     public function syncAllKaryawans()
     {
+        // Mendapatkan semua karyawan aktif
         $karyawans = Karyawan::whereNull('tahun_keluar')->get();
         $success = 0;
         $failed = 0;
         $results = [];
 
         foreach ($karyawans as $karyawan) {
+            // Lewati karyawan tanpa NIK
             if (!$karyawan->nik) {
                 $results[] = "Karyawan {$karyawan->nama_karyawan}: Tidak memiliki NIK";
                 $failed++;
                 continue;
             }
 
+            // Upload nama karyawan ke mesin
             $result = $this->uploadName($karyawan->nik, $karyawan->nama_karyawan);
 
+            // Periksa hasil upload
             if (strpos($result, 'successful') !== false || strpos($result, 'berhasil') !== false) {
                 $success++;
             } else {
@@ -245,10 +258,10 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Parse attendance logs from buffer
+     * Memparse log absensi dari buffer
      *
-     * @param string $buffer Response buffer
-     * @return array Array of attendance logs
+     * @param string $buffer Buffer respons
+     * @return array Array log absensi
      */
     private function parseAttendanceLogs($buffer)
     {
@@ -274,12 +287,12 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Parse data between two strings
+     * Memparse data di antara dua string
      *
-     * @param string $data Original data
-     * @param string $start Start delimiter
-     * @param string $end End delimiter
-     * @return string Parsed data
+     * @param string $data Data asli
+     * @param string $start Pembatas awal
+     * @param string $end Pembatas akhir
+     * @return string Data yang diparsing
      */
     private function parseDataBetween($data, $start, $end)
     {
@@ -295,17 +308,17 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Auto detect IP address for the machine and update if necessary.
+     * Mendeteksi otomatis alamat IP untuk mesin dan memperbarui jika perlu.
      *
      * @return array [success, message, old_ip, new_ip]
      */
     public function autoDetectIp()
     {
-        // Current IP segment
+        // Segmen IP saat ini
         $currentIpParts = explode('.', $this->alamat_ip);
         $originalIp = $this->alamat_ip;
 
-        // If IP format is invalid, return error
+        // Jika format IP tidak valid, kembalikan error
         if (count($currentIpParts) !== 4) {
             return [
                 'success' => false,
@@ -315,7 +328,7 @@ class MesinAbsensi extends Model
             ];
         }
 
-        // Check if current IP is still valid
+        // Periksa apakah IP saat ini masih valid
         $connect = @fsockopen($this->alamat_ip, "80", $errno, $errstr, 1);
         if ($connect) {
             fclose($connect);
@@ -327,27 +340,27 @@ class MesinAbsensi extends Model
             ];
         }
 
-        // Get the subnet (first 3 parts of the IP)
+        // Dapatkan subnet (3 bagian pertama dari IP)
         $subnet = $currentIpParts[0] . '.' . $currentIpParts[1] . '.' . $currentIpParts[2];
 
-        // Try to find the device on the network
+        // Coba temukan perangkat di jaringan
         $found = false;
         $newIp = null;
 
-        // Try to scan IP range in the same subnet (last octet from 1 to 254)
+        // Coba scan rentang IP di subnet yang sama (oktet terakhir dari 1 hingga 254)
         for ($i = 1; $i <= 254; $i++) {
             $testIp = $subnet . '.' . $i;
 
-            // Skip current IP (already know it's not working)
+            // Lewati IP saat ini (sudah tahu tidak berfungsi)
             if ($testIp === $originalIp) {
                 continue;
             }
 
-            // Try to connect to device
-            $connect = @fsockopen($testIp, "80", $errno, $errstr, 0.5); // Short timeout for quick scanning
+            // Coba terhubung ke perangkat
+            $connect = @fsockopen($testIp, "80", $errno, $errstr, 0.5); // Timeout pendek untuk pemindaian cepat
 
             if ($connect) {
-                // Try to verify if it's a fingerprint device by checking for iWsService
+                // Coba verifikasi apakah itu perangkat sidik jari dengan memeriksa iWsService
                 $soap_request = "<GetDeviceInfo><ArgComKey xsi:type=\"xsd:integer\">" . $this->kunci_komunikasi . "</ArgComKey></GetDeviceInfo>";
                 $newLine = "\r\n";
 
@@ -362,7 +375,7 @@ class MesinAbsensi extends Model
                 }
                 fclose($connect);
 
-                // Check if it's a fingerprint device
+                // Periksa apakah itu perangkat sidik jari
                 if (strpos($buffer, '<GetDeviceInfoResponse>') !== false) {
                     $found = true;
                     $newIp = $testIp;
@@ -371,7 +384,7 @@ class MesinAbsensi extends Model
             }
         }
 
-        // If device found, update the IP
+        // Jika perangkat ditemukan, perbarui alamat IP
         if ($found && $newIp) {
             $this->alamat_ip = $newIp;
             $this->save();
@@ -393,7 +406,7 @@ class MesinAbsensi extends Model
     }
 
     /**
-     * Check if the machine is online and accessible.
+     * Memeriksa apakah mesin sedang online dan dapat diakses.
      *
      * @return bool
      */

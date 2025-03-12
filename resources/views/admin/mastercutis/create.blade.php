@@ -43,6 +43,22 @@
             </div>
 
             <div class="form-group">
+                <label for="jenis_karyawan">Diperuntukkan Untuk <span class="text-danger">*</span></label>
+                <select class="form-control @error('jenis_karyawan') is-invalid @enderror" id="jenis_karyawan" name="jenis_karyawan" required>
+                    <option value="">-- Pilih Jenis Karyawan --</option>
+                    <option value="bulanan" {{ old('jenis_karyawan') == 'bulanan' ? 'selected' : '' }}>Karyawan Bulanan</option>
+                    <option value="harian" {{ old('jenis_karyawan') == 'harian' ? 'selected' : '' }}>Karyawan Harian</option>
+                    <option value="borongan" {{ old('jenis_karyawan') == 'borongan' ? 'selected' : '' }}>Karyawan Borongan</option>
+                </select>
+                @error('jenis_karyawan')
+                <div class="invalid-feedback">
+                    {{ $message }}
+                </div>
+                @enderror
+                <small class="form-text text-muted">Pilih jenis karyawan yang berhak atas cuti ini</small>
+            </div>
+
+            <div class="form-group">
                 <div class="custom-control custom-checkbox">
                     <input type="checkbox" class="custom-control-input" id="is_bulanan" name="is_bulanan" value="1" {{ old('is_bulanan') ? 'checked' : '' }}>
                     <label class="custom-control-label" for="is_bulanan">Bulanan?</label>
@@ -136,7 +152,18 @@
             , rightAlign: false
             , removeMaskOnSubmit: true
         });
+        
+        // Toggle form fields based on jenis_karyawan selection
+        $('#jenis_karyawan').on('change', function() {
+            var selectedType = $(this).val();
+            
+            // If bulanan is selected, show bulanan checkbox
+            if (selectedType === 'bulanan') {
+                $('#is_bulanan').prop('checked', true);
+            } else if (selectedType === 'harian' || selectedType === 'borongan') {
+                $('#is_bulanan').prop('checked', false);
+            }
+        });
     });
-
 </script>
 @stop

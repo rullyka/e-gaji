@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Artisan;
 
 class DynamicMenuMiddleware
 {
+    /**
+     * Handle permintaan HTTP yang masuk
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
     public function handle(Request $request, Closure $next)
     {
         if (auth()->check()) {
@@ -26,12 +33,12 @@ class DynamicMenuMiddleware
                 Artisan::call('optimize:clear');
             }
 
-            // Check if coming from menu update routes
+            // Periksa apakah request berasal dari rute pengelolaan menu
             $currentRoute = $request->route()->getName();
             $menuRoutes = ['menu.store', 'menu.update', 'menu.destroy', 'menu.update-order'];
 
             if (in_array($currentRoute, $menuRoutes)) {
-                // Clear menu cache for all users
+                // Hapus cache menu untuk semua pengguna
                 $keys = Cache::get('menu_cache_keys', []);
                 foreach ($keys as $key) {
                     Cache::forget($key);
@@ -42,13 +49,24 @@ class DynamicMenuMiddleware
                 Artisan::call('optimize:clear');
             }
 
-            $menuItems = Cache::remember($cacheKey, 60*24, function () use ($user, $userId) {
-                // Store cache key for future clearing
+            // Cek apakah rute saat ini memerlukan permission tertentu
+            $routeName = $request->route()->getName();
+            $menu = Menu::where('route', $routeName)->first();
+
+            if ($menu && $menu->permission && !$user->can($menu->permission)) {
+                // Jika pengguna tidak memiliki permission yang diperlukan
+                return redirect()->route('admin.dashboard')
+                    ->with('error', 'Anda tidak memiliki izin untuk mengakses halaman tersebut.');
+            }
+
+            // Ambil menu dari cache atau buat baru jika belum ada
+            $menuItems = Cache::remember($cacheKey, 60 * 24, function () use ($user, $userId) {
+                // Simpan kunci cache untuk penghapusan di masa mendatang
                 $cacheKeys = Cache::get('menu_cache_keys', []);
                 $cacheKey = "menu_user_{$userId}";
                 if (!in_array($cacheKey, $cacheKeys)) {
                     $cacheKeys[] = $cacheKey;
-                    Cache::put('menu_cache_keys', $cacheKeys, 60*24*30); // Store for 30 days
+                    Cache::put('menu_cache_keys', $cacheKeys, 60 * 24 * 30); // Simpan selama 30 hari
                 }
 
                 return $this->getMenuForUser($user);
@@ -61,12 +79,20 @@ class DynamicMenuMiddleware
         return $next($request);
     }
 
+    /**
+     * Mendapatkan menu yang sesuai dengan hak akses pengguna
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
     private function getMenuForUser($user)
     {
         // Ambil semua menu dari database
-        $menus = Menu::with('children')
+        $menus = Menu::with(['children' => function ($query) {
+            $query->orderBy('order', 'asc');
+        }])
             ->whereNull('parent_id')
-            ->orderBy('order')
+            ->orderBy('order', 'asc')
             ->get();
 
         $formattedMenu = [];
@@ -129,8 +155,10 @@ class DynamicMenuMiddleware
             // Jika ini adalah header
             if (isset($item['header'])) {
                 // Periksa apakah ini adalah item terakhir atau item berikutnya juga header
-                if ($i == count($formattedMenu) - 1 ||
-                    (isset($formattedMenu[$i+1]['header']))) {
+                if (
+                    $i == count($formattedMenu) - 1 ||
+                    (isset($formattedMenu[$i + 1]['header']))
+                ) {
                     // Skip header ini
                     continue;
                 }

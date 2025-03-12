@@ -21,6 +21,63 @@ use Illuminate\Support\Str;
 class PenggajianController extends Controller
 {
     /**
+ * Generate payslip for multiple employees by period
+ *
+ * @param  int  $periodeId
+ * @return \Illuminate\Http\Response
+ */
+public function generatePayslips($periodeId)
+{
+    // Verify period exists
+    $periode = \App\Models\PeriodeGaji::findOrFail($periodeId);
+
+    // Get all penggajian for the specified period with necessary relationships
+    $penggajians = \App\Models\Penggajian::with([
+        'karyawan.departemen',
+        'karyawan.bagian',
+        'karyawan.jabatan',
+        'karyawan.profesi',
+        'periode'
+    ])
+    ->where('id_periode', $periodeId)
+    ->orderBy('id_karyawan')
+    ->get();
+
+    // If no penggajian found for this period
+    if ($penggajians->isEmpty()) {
+        return redirect()->back()
+            ->with('error', 'Tidak ada data penggajian untuk periode ini.');
+    }
+
+    // Pass to view
+    return view('penggajian.slip', compact('penggajians', 'periode'));
+}
+
+/**
+ * Generate individual payslip for a single employee
+ *
+ * @param  string  $id
+ * @return \Illuminate\Http\Response
+ */
+        public function generatePayslip($id)
+        {
+            // Get single penggajian with related data
+            $penggajian = \App\Models\Penggajian::with([
+                'karyawan.departemen',
+                'karyawan.bagian',
+                'karyawan.jabatan',
+                'karyawan.profesi',
+                'periode'
+            ])->findOrFail($id);
+
+            // Create a collection with single item
+            $penggajians = collect([$penggajian]);
+            $periode = $penggajian->periode;
+
+            // Pass to the same view
+            return view('penggajian.slip', compact('penggajians', 'periode'));
+        }
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -446,15 +503,6 @@ class PenggajianController extends Controller
         return redirect()->back()->with('error', 'Komponen tidak ditemukan');
     }
 
-    /**
-     * Generate payslip for an employee
-     */
-    public function generatePayslip(Penggajian $penggajian)
-    {
-        $penggajian->load(['karyawan', 'periodeGaji']);
-
-        return view('admin.penggajians.payslip', compact('penggajian'));
-    }
 
     /**
      * Export payroll data to Excel

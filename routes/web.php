@@ -38,38 +38,50 @@ use App\Http\Controllers\Admin\ProgramStudiController;
 |
 */
 
+//------------------------------------------------------------------
+// Public Routes
+//------------------------------------------------------------------
 
-// Redirect root ke halaman login
+// Redirect root to login page
 Route::get('/', function () {
     return redirect('/login');
 });
 
-
+// Global Karyawan routes
 Route::get('/karyawans/get-all-active', [KaryawanController::class, 'getAllActive'])
     ->name('karyawans.get-all-active');
+Route::get('karyawans/search', [KaryawanController::class, 'search'])
+    ->name('karyawans.search');
+Route::get('shifts/getNextCode', [ShiftController::class, 'getNextCode'])->name('shifts.getNextCode');
 
-Route::get('karyawans/search', [KaryawanController::class, 'search'])->name('karyawans.search');
-
-// Register permission check middleware
+//------------------------------------------------------------------
+// Protected Routes (Auth Required)
+//------------------------------------------------------------------
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
-    Route::post('mesinabsensis/clone-users', [MesinAbsensiController::class, 'cloneUsers'])
-        ->name('mesinabsensis.clone-users');
-
-    Route::get('mesinabsensis/{mesinabsensi}/auto-detect-ip', [MesinAbsensiController::class, 'autoDetectIp'])
-        ->name('mesinabsensis.auto-detect-ip');
-
-    Route::post('mesinabsensis/{mesinabsensi}/upload-direct-batch', [MesinAbsensiController::class, 'uploadDirectBatch'])
-        ->name('mesinabsensis.upload-direct-batch');
-    // Dashboard admin - accessible to all authenticated users
+    // Dashboard
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
 
-    // User Management - requires specific permissions
+    // Profile Management
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'edit')->name('profile.edit');
+        Route::patch('/profile', 'update')->name('profile.update');
+        Route::delete('/profile', 'destroy')->name('profile.destroy');
+    });
+
+    //------------------------------------------------------------------
+    // User Management
+    //------------------------------------------------------------------
+
+    // Users
     Route::middleware('permission.check:users.view')->group(function () {
         Route::get('users', [UserController::class, 'index'])->name('users.index');
     });
+    Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])
+        ->name('users.reset-password')
+        ->middleware('auth');
 
     Route::middleware('permission.check:users.create')->group(function () {
         Route::get('users/create', [UserController::class, 'create'])->name('users.create');
@@ -85,7 +97,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-    // Role Management
+    // Roles
     Route::middleware('permission.check:roles.view')->group(function () {
         Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
     });
@@ -104,7 +116,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 
-    // Permission Management
+    // Permissions
     Route::middleware('permission.check:permissions.view')->group(function () {
         Route::get('permissions', [PermissionController::class, 'index'])->name('permissions.index');
     });
@@ -126,7 +138,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::delete('permissions/{permission}', [PermissionController::class, 'destroy'])->name('permissions.destroy');
     });
 
-    // Menu Management
+    // Menus
     Route::middleware('permission.check:menu.view')->group(function () {
         Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
     });
@@ -166,62 +178,102 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         Route::post('user-access/{user}/copy', [UserAccessController::class, 'copyAccess'])->name('user-access.copy-access');
     });
 
-    // Profile routes available to all authenticated users
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::resource('bagians', BagianController::class);
+    //------------------------------------------------------------------
+    // Organization Structure
+    //------------------------------------------------------------------
+
+    // Departemen
     Route::resource('departemens', DepartemenController::class);
+
+    // Bagian
+    Route::resource('bagians', BagianController::class);
+
+    // Program Studi
     Route::resource('program_studis', ProgramStudiController::class);
+
+    // Profesi
+    Route::resource('profesis', ProfesiController::class);
+
+    // Jabatan
+    Route::resource('jabatans', JabatanController::class);
+
+    //------------------------------------------------------------------
+    // Employee Management
+    //------------------------------------------------------------------
+
+    // Karyawan
+    Route::resource('karyawans', KaryawanController::class);
+    Route::get('karyawans/get-bagians/{id_departemen}', [KaryawanController::class, 'getBagiansByDepartemen'])
+        ->name('karyawans.get-bagians');
+    Route::get('/get-nik', [KaryawanController::class, 'getNik'])->name('karyawans.get-nik');
+    Route::patch('/karyawans/{karyawan}/resign', [KaryawanController::class, 'resign'])->name('karyawans.resign');
+    //------------------------------------------------------------------
+    // Time Management
+    //------------------------------------------------------------------
+
+    // Hari Libur
     Route::resource('hariliburs', HariliburController::class);
-    // Additional routes for generating Sundays
     Route::get('hariliburs-generate-sundays', [HariliburController::class, 'generateSundaysForm'])
         ->name('hariliburs.generate-sundays-form');
     Route::post('hariliburs-generate-sundays', [HariliburController::class, 'generateSundays'])
         ->name('hariliburs.generate-sundays');
 
-    Route::resource('profesis', ProfesiController::class);
-    Route::resource('jabatans', JabatanController::class);
-    Route::resource('karyawans', KaryawanController::class);
-    Route::get('karyawans/get-bagians/{id_departemen}', [KaryawanController::class, 'getBagiansByDepartemen'])
-        ->name('karyawans.get-bagians');
-
-    Route::get('/get-nik', [KaryawanController::class, 'getNik'])->name('karyawans.get-nik');
-
-    Route::resource('mastercutis', MastercutiController::class);
+    // Shifts
     Route::resource('shifts', ShiftController::class);
-    Route::resource('cuti_karyawans', CutiKaryawanController::class);
 
+
+    // Jadwal Kerja
     Route::resource('jadwalkerjas', JadwalkerjaController::class);
     Route::get('jadwalkerjas/report', [JadwalkerjaController::class, 'report'])->name('jadwalkerjas.report');
 
+    // Master Cuti
+    Route::resource('mastercutis', MastercutiController::class);
 
+    // Cuti Karyawan
+    Route::resource('cuti_karyawans', CutiKaryawanController::class);
+
+    Route::get('cuti_karyawans/{cuti_karyawan}/approval', 'Admin\CutiKaryawanController@approval')->name('cuti_karyawans.approval');
+    // Or if you're using Laravel 8+ syntax:
+    // Route::get('cuti_karyawans/{cuti_karyawan}/approval', [App\Http\Controllers\Admin\CutiKaryawanController::class, 'approval'])->name('cuti_karyawans.approval');
+
+    // Lembur
+    Route::resource('lemburs', LemburController::class);
     Route::get('lemburs/{lembur}/approval', [LemburController::class, 'approvalForm'])
         ->name('lemburs.approval');
     Route::post('lemburs/{lembur}/approve', [LemburController::class, 'approve'])
         ->name('lemburs.approve');
-    Route::resource('lemburs', LemburController::class);
 
-    Route::put('mesinabsensis/{mesinabsensi}/toggle-status', [MesinAbsensiController::class, 'toggleStatus'])
-        ->name('mesinabsensis.toggle-status');
-    Route::resource('mesinabsensis', MesinAbsensiController::class);
-    Route::resource('uangtunggus', UangTungguController::class);
+    //------------------------------------------------------------------
+    // Attendance Management
+    //------------------------------------------------------------------
+
+    // Absensi
     Route::resource('absensis', AbsensiController::class);
+    // Add this route with your other absensi routes
+    Route::get('/absensis/check-schedule', [AbsensiController::class, 'checkSchedule'])->name('absensis.check-schedule');
 
+    // Mesin Absensi
+    Route::resource('mesinabsensis', MesinAbsensiController::class);
 
+    // Mesin Absensi - Basic Operations
     Route::put('mesinabsensis/{mesinabsensi}/toggle-status', [MesinAbsensiController::class, 'toggleStatus'])
         ->name('mesinabsensis.toggle-status');
-    Route::resource('mesinabsensis', MesinAbsensiController::class);
-    Route::resource('uangtunggus', UangTungguController::class);
-    Route::resource('mesinabsensis', MesinAbsensiController::class);
-
-    // Mesin Absensi - Test koneksi dan toggle status
     Route::get('mesinabsensis/{mesinabsensi}/test-connection', [MesinAbsensiController::class, 'testConnection'])
         ->name('mesinabsensis.test-connection');
-    Route::put('mesinabsensis/{mesinabsensi}/toggle-status', [MesinAbsensiController::class, 'toggleStatus'])
-        ->name('mesinabsensis.toggle-status');
+    Route::get('mesinabsensis/{mesinabsensi}/auto-detect-ip', [MesinAbsensiController::class, 'autoDetectIp'])
+        ->name('mesinabsensis.auto-detect-ip');
 
-    // Mesin Absensi - Download logs
+    // Mesin Absensi - User Management
+    Route::get('mesinabsensis/{mesinabsensi}/get-registered-users', [MesinAbsensiController::class, 'getRegisteredUsers'])
+        ->name('mesinabsensis.get-registered-users');
+    Route::post('mesinabsensis/{mesinabsensi}/delete-user', [MesinAbsensiController::class, 'deleteUser'])
+        ->name('mesinabsensis.delete-user');
+    Route::post('mesinabsensis/clone-users', [MesinAbsensiController::class, 'cloneUsers'])
+        ->name('mesinabsensis.clone-users');
+    Route::post('mesinabsensis/sync-all-users', [MesinAbsensiController::class, 'syncAllUsers'])
+        ->name('mesinabsensis.sync-all-users');
+
+    // Mesin Absensi - Log Management
     Route::get('mesinabsensis/{mesinabsensi}/download-logs', [MesinAbsensiController::class, 'downloadLogs'])
         ->name('mesinabsensis.download-logs');
     Route::get('mesinabsensis/download-logs-range', [MesinAbsensiController::class, 'downloadLogsRange'])
@@ -230,60 +282,69 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         ->name('mesinabsensis.download-logs-user');
     Route::post('mesinabsensis/{mesinabsensi}/process-logs', [MesinAbsensiController::class, 'processLogs'])
         ->name('mesinabsensis.process-logs');
+    Route::post('mesinabsensis/{mesinabsensi}/upload-direct-batch', [MesinAbsensiController::class, 'uploadDirectBatch'])
+        ->name('mesinabsensis.upload-direct-batch');
 
-    // Mesin Absensi - Upload names
+    // Mesin Absensi - Name Management
     Route::get('mesinabsensis/{mesinabsensi}/upload-names', [MesinAbsensiController::class, 'showUploadNames'])
         ->name('mesinabsensis.upload-names');
     Route::post('mesinabsensis/{mesinabsensi}/upload-names', [MesinAbsensiController::class, 'uploadNames'])
         ->name('mesinabsensis.upload-names-store');
     Route::post('mesinabsensis/{mesinabsensi}/upload-names-batch', [MesinAbsensiController::class, 'uploadNamesBatch'])
         ->name('mesinabsensis.upload-names-batch');
-    Route::post('mesinabsensis/sync-all-users', [MesinAbsensiController::class, 'syncAllUsers'])
-        ->name('mesinabsensis.sync-all-users');
 
-    // Route untuk mendapatkan daftar karyawan yang terdaftar di mesin
-    Route::get('mesinabsensis/{mesinabsensi}/get-registered-users', [MesinAbsensiController::class, 'getRegisteredUsers'])
-        ->name('mesinabsensis.get-registered-users');
+    //------------------------------------------------------------------
+    // Payroll Management
+    //------------------------------------------------------------------
 
-    // Route::get('karyawans/get-all-active', [KaryawanController::class, 'getAllActive'])
-    //     ->name('karyawans.get-all-active');
+    // Uang Tunggu
+    Route::resource('uangtunggus', UangTungguController::class);
 
-    // Route untuk menghapus karyawan dari mesin absensi
-    Route::post('mesinabsensis/{mesinabsensi}/delete-user', [MesinAbsensiController::class, 'deleteUser'])
-        ->name('mesinabsensis.delete-user');
-
-    // Potongan routes
+    // Potongan
     Route::resource('potongans', \App\Http\Controllers\Admin\PotonganController::class);
 
+    // Periode Gaji
+    Route::resource('periodegaji', PeriodeGajiController::class);
+    Route::post('/periodegaji/generate-monthly', [PeriodeGajiController::class, 'generateMonthly'])
+        ->name('periodegaji.generate-monthly');
+    Route::post('/periodegaji/generate-weekly', [PeriodeGajiController::class, 'generateWeekly'])
+        ->name('periodegaji.generate-weekly');
+    Route::post('/periodegaji/delete-multiple', [PeriodeGajiController::class, 'deleteMultiple'])
+        ->name('periodegaji.delete-multiple');
+    Route::put('/periodegaji/{periodegaji}/set-active', [PeriodeGajiController::class, 'setActive'])
+        ->name('periodegaji.set-active');
 
-    // PeriodeGaji routes
-    Route::resource('periodegaji', \App\Http\Controllers\Admin\PeriodeGajiController::class);
-    // Add these routes within your admin group
-    Route::post('/periodegaji/generate-monthly', [PeriodeGajiController::class, 'generateMonthly'])->name('periodegaji.generate-monthly');
-    Route::post('/periodegaji/generate-weekly', [PeriodeGajiController::class, 'generateWeekly'])->name('periodegaji.generate-weekly');
-    Route::post('/periodegaji/delete-multiple', [PeriodeGajiController::class, 'deleteMultiple'])->name('periodegaji.delete-multiple');
-    Route::put('/periodegaji/{periodegaji}/set-active', [PeriodeGajiController::class, 'setActive'])->name('periodegaji.set-active');
-
-
+    // Penggajian
     Route::resource('penggajian', PenggajianController::class);
+    Route::post('penggajian/get-filtered-karyawans', [PenggajianController::class, 'getFilteredKaryawans'])
+        ->name('penggajian.getFilteredKaryawans');
+    Route::post('penggajian/batch-process', [PenggajianController::class, 'batchProcess'])
+        ->name('penggajian.batchProcess');
+    Route::get('penggajian/{penggajian}/payslip', [PenggajianController::class, 'generatePayslip'])
+        ->name('penggajian.payslip');
+    Route::post('penggajian/{penggajian}/add-component', [PenggajianController::class, 'addComponent'])
+        ->name('penggajian.addComponent');
+    Route::delete('penggajian/{penggajian}/remove-component', [PenggajianController::class, 'removeComponent'])
+        ->name('penggajian.removeComponent');
+    Route::post('penggajian/review', [PenggajianController::class, 'review'])
+        ->name('penggajian.review');
+    Route::post('penggajian/process', [PenggajianController::class, 'process'])
+        ->name('penggajian.process');
 
-    // Additional routes for payroll functionality
-    Route::post('penggajian/get-filtered-karyawans', [PenggajianController::class, 'getFilteredKaryawans'])->name('penggajian.getFilteredKaryawans');
-    Route::post('penggajian/batch-process', [PenggajianController::class, 'batchProcess'])->name('penggajian.batchProcess');
-    Route::get('penggajian/{penggajian}/payslip', [PenggajianController::class, 'generatePayslip'])->name('penggajian.payslip');
-    Route::post('penggajian/{penggajian}/add-component', [PenggajianController::class, 'addComponent'])->name('penggajian.addComponent');
-    Route::delete('penggajian/{penggajian}/remove-component', [PenggajianController::class, 'removeComponent'])->name('penggajian.removeComponent');
+    // Payroll Reports
+    Route::get('penggajian-report/by-period', [PenggajianController::class, 'reportByPeriod'])
+        ->name('penggajian.reportByPeriod');
+    Route::get('penggajian-report/by-department', [PenggajianController::class, 'reportByDepartment'])
+        ->name('penggajian.reportByDepartment');
+    Route::get('penggajian-report/export-excel', [PenggajianController::class, 'exportExcel'])
+        ->name('penggajian.exportExcel');
 
-    // Report routes
-    Route::get('penggajian-report/by-period', [PenggajianController::class, 'reportByPeriod'])->name('penggajian.reportByPeriod');
-    Route::get('penggajian-report/by-department', [PenggajianController::class, 'reportByDepartment'])->name('penggajian.reportByDepartment');
-    Route::get('penggajian-report/export-excel', [PenggajianController::class, 'exportExcel'])->name('penggajian.exportExcel');
-
-    Route::post('penggajian/review', [PenggajianController::class, 'review'])->name('penggajian.review');
-    Route::post('penggajian/process', [PenggajianController::class, 'process'])->name('penggajian.process');
+    // Payslip routes - add these to your admin group routes
+    Route::get('/penggajian/periode/{periodeId}/payslips', [PenggajianController::class, 'generatePayslips'])
+        ->name('penggajian.payslips');
+    Route::get('/penggajian/{penggajian}/payslip', [PenggajianController::class, 'generatePayslip'])
+        ->name('penggajian.payslip');
 });
 
-
-
-
+// Authentication Routes
 require __DIR__ . '/auth.php';

@@ -11,20 +11,26 @@ class Departemen extends Model
 {
     use HasFactory, HasUuids;
 
+    // Atribut yang dapat diisi secara massal
     protected $fillable = [
-        'name_departemen',
+        'name_departemen', // Nama departemen
     ];
 
     /**
-     * Get the bagians associated with the departemen.
+     * Mendapatkan bagian-bagian yang terkait dengan departemen ini.
      */
     public function bagians()
     {
         return $this->hasMany(Bagian::class, 'id_departemen');
     }
-    public function hasBagians()
-{
-    return $this->bagians()->count() > 0;
-}
 
+    /**
+     * Memeriksa apakah departemen ini memiliki bagian.
+     *
+     * @return bool
+     */
+    public function hasBagians()
+    {
+        return $this->bagians()->count() > 0;
+    }
 }

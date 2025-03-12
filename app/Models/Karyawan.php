@@ -2,57 +2,28 @@
 
 namespace App\Models;
 
-use App\Models\Bagian;
-use App\Models\Absensi;
-use App\Models\Jabatan;
-use App\Models\Profesi;
-use App\Models\Departemen;
-use App\Models\Uangtunggu;
-use App\Models\Penggajian;
-use App\Models\ProgramStudi;
-use App\Models\MesinAbsensi;
+use App\Enums\KaryawanStatusEnum;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Karyawan extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
-    protected $fillable = [
-        'nik_karyawan',
-        'nama_karyawan',
-        'foto_karyawan',
-        'statuskaryawan',
-        'id_departemen',
-        'id_bagian',
-        'tgl_awalmmasuk',
-        'tahun_keluar',
-        'id_jabatan',
-        'id_profesi',
-        'nik',
-        'kk',
-        'statuskawin',
-        'pendidikan_terakhir',
-        'id_programstudi',
-        'no_hp',
-        'ortu_bapak',
-        'ortu_ibu',
-        'ukuran_kemeja',
-        'ukuran_celana',
-        'ukuran_sepatu',
-        'jml_anggotakk',
-        'upload_ktp',
-        'status', // aktif, nonaktif, cuti
+    protected $guarded = [
+        'id'
     ];
 
     protected $casts = [
-        'tgl_awalmmasuk' => 'date',
-        'tahun_keluar' => 'date',
+        'tgl_awalmasuk' => 'date',
+        'tahun_keluar' => 'date', // Perbaikan
+        'status' => 'string', // Gunakan Enum
     ];
 
     /**
-     * Get the departemen that owns the karyawan.
+     * Relasi ke departemen
      */
     public function departemen()
     {
@@ -60,7 +31,7 @@ class Karyawan extends Model
     }
 
     /**
-     * Get the bagian that owns the karyawan.
+     * Relasi ke bagian
      */
     public function bagian()
     {
@@ -68,7 +39,7 @@ class Karyawan extends Model
     }
 
     /**
-     * Get the jabatan that owns the karyawan.
+     * Relasi ke jabatan
      */
     public function jabatan()
     {
@@ -76,7 +47,7 @@ class Karyawan extends Model
     }
 
     /**
-     * Get the profesi that owns the karyawan.
+     * Relasi ke profesi
      */
     public function profesi()
     {
@@ -84,7 +55,7 @@ class Karyawan extends Model
     }
 
     /**
-     * Get the program studi that owns the karyawan.
+     * Relasi ke program studi
      */
     public function programStudi()
     {
@@ -92,104 +63,15 @@ class Karyawan extends Model
     }
 
     /**
-     * Get the penggajians for the karyawan.
+     * Relasi ke penggajian
      */
     public function penggajians()
     {
-        return $this->hasMany(Penggajian::class, 'id_karyawan', 'id');
+        return $this->hasMany(Penggajian::class, 'id_karyawan');
     }
 
     /**
-     * Get tunjangans for this karyawan
-     */
-    public function tunjangans()
-    {
-        // Implementasi sesuai dengan struktur database
-        // Jika menggunakan model Tunjangan, maka:
-        // return $this->hasMany(Tunjangan::class, 'karyawan_id', 'id');
-
-        // Jika tidak ada model Tunjangan, maka bisa dibuat collection dari data jabatan/profesi
-        return collect([
-            [
-                'nama' => 'Tunjangan Jabatan',
-                'nominal' => $this->jabatan ? $this->jabatan->tunjangan_jabatan : 0
-            ],
-            [
-                'nama' => 'Tunjangan Profesi',
-                'nominal' => $this->profesi ? $this->profesi->tunjangan_profesi : 0
-            ]
-        ])->filter(function ($item) {
-            return $item['nominal'] > 0;
-        });
-    }
-
-    /**
-     * Check if karyawan has payroll data in the specified period
-     */
-    public function hasPayrollInPeriod($periodeId)
-    {
-        return $this->penggajians()
-            ->where('id_periode', $periodeId)
-            ->exists();
-    }
-
-    /**
-     * Calculate total salary amount (summing all periods)
-     */
-    public function getTotalSalaryAmount()
-    {
-        return $this->penggajians()->sum('gaji_bersih');
-    }
-
-    /**
-     * Get the full name
-     */
-    public function getNamaAttribute()
-    {
-        return $this->nama_karyawan;
-    }
-
-    /**
-     * Get status badge class
-     */
-    public function getStatusBadgeClassAttribute()
-    {
-        switch ($this->status) {
-            case 'aktif':
-                return 'badge-success';
-            case 'nonaktif':
-                return 'badge-danger';
-            case 'cuti':
-                return 'badge-warning';
-            default:
-                return 'badge-secondary';
-        }
-    }
-
-    /**
-     * Get the full path to the employee's photo
-     */
-    public function getFotoUrlAttribute()
-    {
-        if ($this->foto_karyawan) {
-            return asset('storage/karyawan/foto/' . $this->foto_karyawan);
-        }
-        return asset('images/default-avatar.png');
-    }
-
-    /**
-     * Get the full path to the employee's KTP scan
-     */
-    public function getKtpUrlAttribute()
-    {
-        if ($this->upload_ktp) {
-            return asset('storage/karyawan/ktp/' . $this->upload_ktp);
-        }
-        return null;
-    }
-
-    /**
-     * Get the absensis for the karyawan.
+     * Relasi ke absensi
      */
     public function absensis()
     {
@@ -197,7 +79,7 @@ class Karyawan extends Model
     }
 
     /**
-     * Get the uang tunggus for the karyawan.
+     * Relasi ke uang tunggu
      */
     public function uangTunggus()
     {
@@ -205,37 +87,101 @@ class Karyawan extends Model
     }
 
     /**
-     * Get all mesin absensi where this employee is registered
-     * This is done through the karyawan_mesinabsensi pivot table
+     * Relasi ke mesin absensi (pivot table)
      */
     public function mesinAbsensis()
     {
         return $this->belongsToMany(MesinAbsensi::class, 'karyawan_mesinabsensi', 'karyawan_id', 'mesinabsensi_id')
-                    ->withPivot('status_sync', 'sync_at')
-                    ->withTimestamps();
+            ->withPivot('status_sync', 'sync_at')
+            ->withTimestamps();
     }
 
-    // Scope untuk get karyawan dengan status aktif
+    /**
+     * Scope karyawan dengan status aktif
+     */
     public function scopeActive($query)
     {
-        return $query->where('status', 'aktif');
+        return $query->where('status', KaryawanStatusEnum::AKTIF);
     }
 
-    // Scope untuk get karyawan dengan status nonaktif
+    /**
+     * Scope karyawan dengan status nonaktif
+     */
     public function scopeInactive($query)
     {
-        return $query->where('status', 'nonaktif');
+        return $query->where('status', KaryawanStatusEnum::NONAKTIF);
     }
 
-    // Scope untuk get karyawan dengan status cuti
+    /**
+     * Scope karyawan dengan status cuti
+     */
     public function scopeOnLeave($query)
     {
-        return $query->where('status', 'cuti');
+        return $query->where('status', KaryawanStatusEnum::CUTI);
     }
 
-    // Scope untuk get karyawan dari departemen tertentu
+    /**
+     * Scope karyawan berdasarkan departemen
+     */
     public function scopeByDepartment($query, $departemenId)
     {
         return $query->where('id_departemen', $departemenId);
+    }
+
+    /**
+     * Cek apakah karyawan punya payroll di periode tertentu
+     */
+    public function hasPayrollInPeriod($periodeId)
+    {
+        return $this->penggajians()->where('id_periode', $periodeId)->exists();
+    }
+
+    /**
+     * Hitung total gaji yang diterima
+     */
+    public function getTotalSalaryAmount()
+    {
+        return $this->penggajians()->sum('gaji_bersih');
+    }
+
+    /**
+     * Get nama lengkap
+     */
+    public function getNamaAttribute()
+    {
+        return $this->nama_karyawan;
+    }
+
+    /**
+     * Get status badge class untuk tampilan UI
+     */
+    public function getStatusBadgeClassAttribute()
+    {
+        return match ($this->status) {
+            KaryawanStatusEnum::AKTIF => 'badge-success',
+            KaryawanStatusEnum::NONAKTIF => 'badge-danger',
+            KaryawanStatusEnum::CUTI => 'badge-warning',
+            default => 'badge-secondary',
+        };
+    }
+
+    /**
+     * Get URL foto karyawan
+     */
+    public function getFotoUrlAttribute()
+    {
+        return $this->foto_karyawan
+            ? asset("storage/karyawan/foto/{$this->foto_karyawan}")
+            : asset('images/default-avatar.png');
+    }
+
+    /**
+     * Get URL scan KTP karyawan
+     */
+    public function getKtpUrlAttribute()
+    {
+        return $this->upload_ktp
+            ? asset("storage/karyawan/ktp/{$this->upload_ktp}")
+            : null;
     }
 }

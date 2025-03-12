@@ -8,6 +8,36 @@ use App\Models\Shift;
 
 class ShiftController extends Controller
 {
+    /**
+     * Get the next available code for a shift.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getNextCode(Request $request)
+    {
+        $prefix = $request->input('prefix', 'SHIFT-');
+
+        // Find the highest code with the given prefix
+        $lastShift = \App\Models\Shift::where('kode_shift', 'like', $prefix . '%')
+            ->orderByRaw('CAST(SUBSTRING(kode_shift, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
+            ->first();
+
+        $nextNum = 1;
+
+        if ($lastShift) {
+            // Extract the numeric part
+            $lastCode = $lastShift->kode_shift;
+            $numPart = substr($lastCode, strlen($prefix));
+            $lastNum = (int)$numPart;
+            $nextNum = $lastNum + 1;
+        }
+
+        // Format with leading zeros
+        $nextCode = str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+
+        return response()->json(['nextCode' => $nextCode]);
+    }
     public function index()
     {
         $shifts = Shift::orderBy('kode_shift')->get();
@@ -73,5 +103,4 @@ class ShiftController extends Controller
         return redirect()->route('shifts.index')
             ->with('success', 'Shift berhasil dihapus');
     }
-
 }

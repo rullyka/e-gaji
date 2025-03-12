@@ -41,6 +41,8 @@
                     <th style="width: 10px">#</th>
                     <th>Name</th>
                     <th>Email</th>
+                    <th>Type</th>
+                    <th>Linked To</th>
                     <th>Roles</th>
                     @can_show('users.create')
                     <th style="width: 150px">Action</th>
@@ -53,6 +55,25 @@
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
+                    <td>
+                        @if($user->karyawan)
+                        <span class="badge badge-primary">Karyawan</span>
+                        @else
+                        <span class="badge badge-warning">Owner/Admin</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($user->karyawan)
+                        <a href="{{ route('karyawans.show', $user->karyawan->id) }}" class="text-primary">
+                            {{ $user->karyawan->nama_karyawan }}
+                            ({{ $user->karyawan->nik_karyawan }})
+                            <br>
+                            <small class="text-muted">{{ $user->karyawan->departemen->name_departemen ?? 'No Department' }}</small>
+                        </a>
+                        @else
+                        -
+                        @endif
+                    </td>
                     <td>
                         @foreach($user->roles as $role)
                         <span class="badge badge-info">{{ $role->name }}</span>
@@ -69,6 +90,12 @@
                             @method('DELETE')
                             <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
                                 <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                        <form action="{{ route('users.reset-password', $user) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-info btn-sm" onclick="return confirm('Reset password to 12345678?')">
+                                <i class="fas fa-key"></i>
                             </button>
                         </form>
                         @endcan_show

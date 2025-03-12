@@ -12,42 +12,42 @@ class Absensi extends Model
     use HasFactory;
 
     /**
-     * The attributes that are mass assignable.
+     * Atribut yang dapat diisi secara massal.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'karyawan_id',
-        'tanggal',
-        'jadwalkerja_id',
-        'jam_masuk',
-        'jam_pulang',
-        'total_jam',
-        'keterlambatan',
-        'pulang_awal',
-        'status',
-        'jenis_absensi_masuk',
-        'mesinabsensi_masuk_id',
-        'jenis_absensi_pulang',
-        'mesinabsensi_pulang_id',
-        'keterangan'
+        'karyawan_id', // ID karyawan yang melakukan absensi
+        'tanggal', // Tanggal absensi
+        'jadwalkerja_id', // ID jadwal kerja yang terkait
+        'jam_masuk', // Waktu masuk kerja
+        'jam_pulang', // Waktu pulang kerja
+        'total_jam', // Total jam kerja
+        'keterlambatan', // Durasi keterlambatan
+        'pulang_awal', // Durasi pulang lebih awal
+        'status', // Status absensi
+        'jenis_absensi_masuk', // Jenis absensi saat masuk
+        'mesinabsensi_masuk_id', // ID mesin absensi saat masuk
+        'jenis_absensi_pulang', // Jenis absensi saat pulang
+        'mesinabsensi_pulang_id', // ID mesin absensi saat pulang
+        'keterangan' // Keterangan tambahan
     ];
 
     /**
-     * The attributes that should be cast.
+     * Atribut yang harus di-cast ke tipe data tertentu.
      *
      * @var array<string, string>
      */
     protected $casts = [
-        'tanggal' => 'date',
-        'jam_masuk' => 'datetime:H:i',
-        'jam_pulang' => 'datetime:H:i',
-        'keterlambatan' => 'integer',
-        'pulang_awal' => 'integer',
+        'tanggal' => 'date', // Cast tanggal ke tipe date
+        'jam_masuk' => 'datetime:H:i', // Cast jam masuk ke tipe datetime dengan format jam:menit
+        'jam_pulang' => 'datetime:H:i', // Cast jam pulang ke tipe datetime dengan format jam:menit
+        'keterlambatan' => 'integer', // Cast keterlambatan ke tipe integer
+        'pulang_awal' => 'integer', // Cast pulang awal ke tipe integer
     ];
 
     /**
-     * Get the karyawan associated with the absensi.
+     * Mendapatkan karyawan yang terkait dengan absensi ini.
      */
     public function karyawan()
     {
@@ -55,7 +55,7 @@ class Absensi extends Model
     }
 
     /**
-     * Get the jadwal kerja associated with the absensi.
+     * Mendapatkan jadwal kerja yang terkait dengan absensi ini.
      */
     public function jadwalKerja()
     {
@@ -63,7 +63,7 @@ class Absensi extends Model
     }
 
     /**
-     * Get the mesin absensi for check-in.
+     * Mendapatkan mesin absensi untuk check-in.
      */
     public function mesinAbsensiMasuk()
     {
@@ -71,7 +71,7 @@ class Absensi extends Model
     }
 
     /**
-     * Get the mesin absensi for check-out.
+     * Mendapatkan mesin absensi untuk check-out.
      */
     public function mesinAbsensiPulang()
     {

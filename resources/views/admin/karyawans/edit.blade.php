@@ -30,7 +30,16 @@
         </div>
         @endif
 
-        <form action="{{ route('karyawans.update', $karyawan) }}" method="POST" enctype="multipart/form-data" id="karyawanForm">
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="close" data-dismiss="alert">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        @endif
+
+        <form action="{{ route('karyawans.update', $karyawan->id) }}" method="POST" enctype="multipart/form-data" id="karyawanForm">
             @csrf
             @method('PUT')
 
@@ -70,15 +79,8 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="nik_karyawan">NIK Karyawan <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control @error('nik_karyawan') is-invalid @enderror" id="nik_karyawan" name="nik_karyawan" value="{{ old('nik_karyawan', $karyawan->nik_karyawan) }}" required>
-                                        <div class="input-group-append">
-                                            <button type="button" class="btn btn-outline-secondary" id="refreshNik">
-                                                <i class="fas fa-sync-alt"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <small class="form-text text-muted">Format: YYYYMM### (dapat diedit)</small>
+                                    <input type="text" class="form-control @error('nik_karyawan') is-invalid @enderror" id="nik_karyawan" name="nik_karyawan" value="{{ old('nik_karyawan', $karyawan->nik_karyawan) }}" required>
+                                    <small class="form-text text-muted">Format: YYYYMM###</small>
                                     @error('nik_karyawan')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -98,18 +100,18 @@
 
                                 <div class="form-group">
                                     <label for="foto_karyawan">Foto Karyawan</label>
-                                    @if($karyawan->foto_karyawan)
-                                    <div class="mb-2">
-                                        <img src="{{ $karyawan->foto_url }}" alt="{{ $karyawan->nama_karyawan }}" class="img-thumbnail" style="max-height: 100px;">
-                                    </div>
-                                    @endif
                                     <div class="input-group">
                                         <div class="custom-file">
                                             <input type="file" class="custom-file-input @error('foto_karyawan') is-invalid @enderror" id="foto_karyawan" name="foto_karyawan">
                                             <label class="custom-file-label" for="foto_karyawan">Pilih file</label>
                                         </div>
                                     </div>
-                                    <small class="form-text text-muted">Format: JPG, PNG, JPEG. Max: 2MB. Kosongkan jika tidak ingin mengubah foto.</small>
+                                    <small class="form-text text-muted">Format: JPG, PNG, JPEG. Max: 2MB.</small>
+                                    @if($karyawan->foto_karyawan)
+                                    <div class="mt-2">
+                                        <img src="{{ $karyawan->fotoUrl }}" alt="Foto Karyawan" class="img-thumbnail" style="max-height: 100px;">
+                                    </div>
+                                    @endif
                                     @error('foto_karyawan')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -120,19 +122,9 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="tgl_awalmmasuk">Tanggal Mulai Masuk <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control @error('tgl_awalmmasuk') is-invalid @enderror" id="tgl_awalmmasuk" name="tgl_awalmmasuk" value="{{ old('tgl_awalmmasuk', $karyawan->tgl_awalmmasuk ? $karyawan->tgl_awalmmasuk->format('Y-m-d') : '') }}" required>
-                                    @error('tgl_awalmmasuk')
-                                    <div class="invalid-feedback">
-                                        {{ $message }}
-                                    </div>
-                                    @enderror
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="tahun_keluar">Tanggal Keluar</label>
-                                    <input type="date" class="form-control @error('tahun_keluar') is-invalid @enderror" id="tahun_keluar" name="tahun_keluar" value="{{ old('tahun_keluar', $karyawan->tahun_keluar ? $karyawan->tahun_keluar->format('Y-m-d') : '') }}">
-                                    @error('tahun_keluar')
+                                    <label for="tgl_awalmasuk">Tanggal Mulai Masuk <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control @error('tgl_awalmasuk') is-invalid @enderror" id="tgl_awalmasuk" name="tgl_awalmasuk" value="{{ old('tgl_awalmasuk', $karyawan->tgl_awalmasuk ? $karyawan->tgl_awalmasuk->format('Y-m-d') : '') }}" required>
+                                    @error('tgl_awalmasuk')
                                     <div class="invalid-feedback">
                                         {{ $message }}
                                     </div>
@@ -256,11 +248,11 @@
                                     </div>
                                     @enderror
                                 </div>
-
-                                <div class="form-group">
-                                    <label for="id_programstudi">Program Studi</label>
+                
+                                <div class="form-group" id="programstudi_group">
+                                    <label for="id_programstudi">Prodi / Jurusan</label>
                                     <select class="form-control select2 @error('id_programstudi') is-invalid @enderror" id="id_programstudi" name="id_programstudi">
-                                        <option value="">-- Pilih Program Studi --</option>
+                                        <option value="">-- Pilih Prodi / Jurusan --</option>
                                         @foreach($programStudis as $programStudi)
                                         <option value="{{ $programStudi->id }}" {{ old('id_programstudi', $karyawan->id_programstudi) == $programStudi->id ? 'selected' : '' }}>
                                             {{ $programStudi->name_programstudi }}
@@ -276,9 +268,11 @@
                             </div>
 
                             <div class="col-md-6">
+                                <!-- Input NIK -->
                                 <div class="form-group">
                                     <label for="nik">NIK (KTP) <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik', $karyawan->nik) }}" required>
+                                    <input type="text" class="form-control @error('nik') is-invalid @enderror" id="nik" name="nik" value="{{ old('nik', $karyawan->nik) }}" required maxlength="16" inputmode="numeric" placeholder="Maksimal 16 digit">
+                                    <small class="form-text text-muted">Masukkan NIK KTP (maksimal 16 digit angka)</small>
                                     @error('nik')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -286,9 +280,11 @@
                                     @enderror
                                 </div>
 
+                                <!-- Input KK -->
                                 <div class="form-group">
                                     <label for="kk">Nomor KK <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('kk') is-invalid @enderror" id="kk" name="kk" value="{{ old('kk', $karyawan->kk) }}" required>
+                                    <input type="text" class="form-control @error('kk') is-invalid @enderror" id="kk" name="kk" value="{{ old('kk', $karyawan->kk) }}" required maxlength="16" inputmode="numeric" placeholder="Maksimal 16 digit">
+                                    <small class="form-text text-muted">Masukkan nomor KK (maksimal 16 digit angka)</small>
                                     @error('kk')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -298,18 +294,18 @@
 
                                 <div class="form-group">
                                     <label for="upload_ktp">Upload KTP</label>
-                                    @if($karyawan->upload_ktp)
-                                    <div class="mb-2">
-                                        <img src="{{ $karyawan->ktp_url }}" alt="KTP {{ $karyawan->nama_karyawan }}" class="img-thumbnail" style="max-height: 100px;">
-                                    </div>
-                                    @endif
                                     <div class="input-group">
                                         <div class="custom-file">
                                             <input type="file" class="custom-file-input @error('upload_ktp') is-invalid @enderror" id="upload_ktp" name="upload_ktp">
                                             <label class="custom-file-label" for="upload_ktp">Pilih file</label>
                                         </div>
                                     </div>
-                                    <small class="form-text text-muted">Format: JPG, PNG, JPEG. Max: 2MB. Kosongkan jika tidak ingin mengubah KTP.</small>
+                                    <small class="form-text text-muted">Format: JPG, PNG, JPEG. Max: 2MB.</small>
+                                    @if($karyawan->upload_ktp)
+                                    <div class="mt-2">
+                                        <img src="{{ $karyawan->ktpUrl }}" alt="Scan KTP" class="img-thumbnail" style="max-height: 100px;">
+                                    </div>
+                                    @endif
                                     @error('upload_ktp')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -433,6 +429,37 @@
                 </div>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Resign Modal -->
+<div class="modal fade" id="resignModal" tabindex="-1" role="dialog" aria-labelledby="resignModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title" id="resignModalLabel">Confirm Resign</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="resignForm" action="" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Anda akan mengubah status karyawan menjadi resign.
+                    </div>
+                    <div class="form-group">
+                        <label for="tanggal_resign">Tanggal Resign <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="tanggal_resign" name="tanggal_resign" required value="{{ date('Y-m-d') }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger">Konfirmasi Resign</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @stop
@@ -562,29 +589,242 @@
             , width: '100%'
         });
 
+        // Enhance step navigation with validation
+        $('#smartwizard').on('leaveStep', function(e, anchorObject, currentStepIndex, nextStepIndex, stepDirection) {
+            // If moving forward, validate the current step
+            if (stepDirection === 'forward') {
+                // Get all form fields in the current step
+                var $currentStep = $('#step-' + (currentStepIndex + 1));
+                var $requiredFields = $currentStep.find('[required]');
+
+                // Check if all required fields are filled
+                var valid = true;
+                $requiredFields.each(function() {
+                    if (!$(this).val()) {
+                        $(this).addClass('is-invalid');
+                        valid = false;
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                // Special validation for select elements with select2
+                $currentStep.find('select[required]').each(function() {
+                    if (!$(this).val()) {
+                        // Add red border to select2 container
+                        $(this).closest('.form-group').find('.select2-selection').addClass('border-danger');
+                        valid = false;
+                    } else {
+                        $(this).closest('.form-group').find('.select2-selection').removeClass('border-danger');
+                    }
+                });
+
+                // Special validations for step 3 (Data Pendidikan)
+                if (currentStepIndex === 2) {
+                    if (!validateNikKk()) {
+                        valid = false;
+                    }
+                    
+                    // Validate program studi if pendidikan is higher than SMP
+                    var pendidikan = $('#pendidikan_terakhir').val();
+                    if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS') {
+                        if (!$('#id_programstudi').val()) {
+                            $('#id_programstudi').addClass('is-invalid');
+                            $('#id_programstudi').closest('.form-group').find('.select2-selection').addClass('border-danger');
+                            valid = false;
+                        }
+                    }
+                }
+
+                // Special validations for step 2 (Data Pekerjaan)
+                if (currentStepIndex === 1) {
+                    if (!validateDepartemenBagian()) {
+                        valid = false;
+                    }
+                }
+
+                if (!valid) {
+                    // Display an error message for the step
+                    if (!$currentStep.find('.step-validation-message').length) {
+                        $currentStep.prepend(
+                            '<div class="step-validation-message alert alert-danger">' +
+                            '<i class="fas fa-exclamation-triangle"></i> Ada kolom wajib yang belum diisi atau data tidak valid!' +
+                            '</div>'
+                        );
+                    }
+                    return false;
+                } else {
+                    // Remove error message if exists
+                    $currentStep.find('.step-validation-message').remove();
+                }
+            }
+            return true;
+        });
+
+        // Handle form submission button click
+        $('#btn-submit-form').on('click', function() {
+            // Validate all form fields
+            var form = document.getElementById('karyawanForm');
+
+            // Add 'was-validated' class to use Bootstrap's validation styles
+            form.classList.add('was-validated');
+
+            // Check HTML5 validation
+            if (!form.checkValidity()) {
+                // Find the first invalid field's step
+                var firstInvalidField = form.querySelector(':invalid');
+                if (firstInvalidField) {
+                    // Find which step contains this field
+                    for (var i = 1; i <= 4; i++) {
+                        if ($('#step-' + i).find(firstInvalidField).length) {
+                            // Switch to this step
+                            $('#smartwizard').smartWizard("goToStep", i - 1);
+                            break;
+                        }
+                    }
+                }
+
+                // Display validation message
+                alert('Ada kolom wajib yang belum diisi. Mohon lengkapi formulir.');
+                return false;
+            }
+
+            // Check custom validations
+            if (!validateNikKk()) {
+                $('#smartwizard').smartWizard("goToStep", 2); // Go to step 3
+                alert('NIK dan Nomor KK tidak boleh sama!');
+                return false;
+            }
+
+            if (!validateDepartemenBagian()) {
+                $('#smartwizard').smartWizard("goToStep", 1); // Go to step 2
+                alert('Silakan pilih Bagian untuk Departemen yang dipilih.');
+                return false;
+            }
+            
+            // Check if program studi is required and filled
+            var pendidikan = $('#pendidikan_terakhir').val();
+            if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS' && !$('#id_programstudi').val()) {
+                $('#smartwizard').smartWizard("goToStep", 2); // Go to step 3
+                alert('Silakan pilih Prodi / Jurusan untuk pendidikan yang dipilih.');
+                return false;
+            }
+
+            // If all validations pass, submit the form
+            form.submit();
+        });
+
+        // Handle resignButton click
+        $('#btn-resign').on('click', function() {
+            // Set the form action URL with the employee ID
+            const id = '{{ $karyawan->id }}';
+            $('#resignForm').attr('action', '/admin/karyawans/' + id + '/resign');
+            // Show the modal
+            $('#resignModal').modal('show');
+        });
+
+        // Show server-side validation errors on the appropriate tab
+        $(document).ready(function() {
+            // If there are validation errors, find which step they belong to
+            if ($('.alert-danger').length > 0) {
+                // Get all error fields
+                var errorFields = [];
+                $('.invalid-feedback').each(function() {
+                    var prevField = $(this).prev();
+                    if (prevField.length && prevField.attr('id')) {
+                        errorFields.push(prevField.attr('id'));
+                    }
+                });
+
+                // Find which step contains the first error
+                var errorStep = 0;
+                for (var i = 1; i <= 4; i++) {
+                    var $step = $('#step-' + i);
+                    for (var j = 0; j < errorFields.length; j++) {
+                        if ($step.find('#' + errorFields[j]).length > 0) {
+                            errorStep = i - 1;
+                            break;
+                        }
+                    }
+                    if (errorStep > 0) break;
+                }
+
+                // Go to the step with errors
+                if (errorStep > 0) {
+                    $('#smartwizard').smartWizard("goToStep", errorStep);
+                }
+            }
+        });
+
         // Initialize custom file input
         bsCustomFileInput.init();
+
+        // Handle pendidikan_terakhir change to show/hide program studi
+        $('#pendidikan_terakhir').on('change', function() {
+            var pendidikan = $(this).val();
+            var programStudiGroup = $('#programstudi_group');
+            
+            // Show program studi field only for education levels higher than SMP
+            if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS') {
+                programStudiGroup.show();
+                // Make it required for higher education
+                $('#id_programstudi').attr('required', true);
+                // Update label to show it's required
+                programStudiGroup.find('label').html('Prodi / Jurusan <span class="text-danger">*</span>');
+            } else {
+                programStudiGroup.hide();
+                $('#id_programstudi').attr('required', false);
+                $('#id_programstudi').val('').trigger('change');
+            }
+        });
+        
+        // Trigger on page load to set initial state
+        $('#pendidikan_terakhir').trigger('change');
 
         // Department-based filtering for bagian dropdown
         $('#id_departemen').on('change', function() {
             var departemenId = $(this).val();
             var bagianSelect = $('#id_bagian');
+            var bagianFormGroup = bagianSelect.closest('.form-group');
+            var bagianLabel = bagianFormGroup.find('label');
 
             // Reset bagian selection
             bagianSelect.val('').trigger('change');
 
             if (departemenId) {
-                // Enable only bagian that belongs to the selected department
+                // Check if department has any bagian
+                var hasBagian = false;
                 bagianSelect.find('option').each(function() {
-                    var bagianOption = $(this);
-                    if (bagianOption.data('departemen') == departemenId || bagianOption.val() == '') {
-                        bagianOption.prop('disabled', false);
-                    } else {
-                        bagianOption.prop('disabled', true);
+                    if ($(this).data('departemen') == departemenId) {
+                        hasBagian = true;
+                        return false; // break the loop
                     }
                 });
+
+                if (hasBagian) {
+                    // Show bagian field and make it required
+                    bagianFormGroup.show();
+                    bagianSelect.prop('required', true);
+                    bagianLabel.html('Bagian <span class="text-danger">*</span>');
+
+                    // Enable only bagian that belongs to the selected department
+                    bagianSelect.find('option').each(function() {
+                        var bagianOption = $(this);
+                        if (bagianOption.data('departemen') == departemenId || bagianOption.val() == '') {
+                            bagianOption.prop('disabled', false);
+                        } else {
+                            bagianOption.prop('disabled', true);
+                        }
+                    });
+                } else {
+                    // Hide bagian field if no divisions for this department
+                    bagianFormGroup.hide();
+                    bagianSelect.prop('required', false);
+                }
             } else {
                 // If no department is selected, enable all bagian options
+                bagianFormGroup.hide();
+                bagianSelect.prop('required', false);
                 bagianSelect.find('option').prop('disabled', false);
             }
 
@@ -594,87 +834,105 @@
             });
         });
 
+        // Trigger department change on page load
+        $('#id_departemen').trigger('change');
+
+        // Validate departemen and bagian relationship
+        function validateDepartemenBagian() {
+            var departemenId = $('#id_departemen').val();
+            var bagianId = $('#id_bagian').val();
+            
+            if (departemenId) {
+                // Check if department has any bagian
+                var hasBagian = false;
+                $('#id_bagian option').each(function() {
+                    if ($(this).data('departemen') == departemenId) {
+                        hasBagian = true;
+                        return false; // break the loop
+                    }
+                });
+                
+                if (hasBagian && !bagianId) {
+                    // If department has bagian but none selected, show error
+                    $('#id_bagian').addClass('is-invalid');
+                    $('#id_bagian').closest('.form-group').find('.select2-selection').addClass('border-danger');
+                    
+                    // Add error message if not exists
+                    if (!$('#bagian-error').length) {
+                        $('<div id="bagian-error" class="mt-1 text-danger small">' +
+                          'Silakan pilih Bagian untuk Departemen yang dipilih.</div>')
+                          .insertAfter('#id_bagian').closest('.select2-container');
+                    }
+                    return false;
+                }
+            }
+            
+            // Remove error state
+            $('#id_bagian').removeClass('is-invalid');
+            $('#id_bagian').closest('.form-group').find('.select2-selection').removeClass('border-danger');
+            $('#bagian-error').remove();
+            return true;
+        }
+
+        // Validasi NIK dan KK
+        function validateNikKk() {
+            var nikValue = $('#nik').val();
+            var kkValue = $('#kk').val();
+
+            // Jika keduanya sudah diisi dan nilainya sama
+            if (nikValue && kkValue && nikValue === kkValue) {
+                // Tampilkan pesan error
+                if (!$('#nik-kk-error').length) {
+                    $('<div id="nik-kk-error" class="mt-2 alert alert-danger">' +
+                        '<i class="fas fa-exclamation-triangle"></i> ' +
+                        'NIK dan Nomor KK tidak boleh sama!</div>').insertAfter('#kk');
+                }
+
+                // Tambahkan class is-invalid
+                $('#nik, #kk').addClass('is-invalid');
+                return false;
+            } else {
+                // Hapus pesan error jika ada
+                $('#nik-kk-error').remove();
+
+                // Hapus class is-invalid
+                $('#nik, #kk').removeClass('is-invalid');
+                return true;
+            }
+        }
+
+        // Validasi NIK dan KK saat input berubah
+        $('#nik, #kk').on('input', validateNikKk);
+
         // Initialize SmartWizard
         $('#smartwizard').smartWizard({
-            selected: 0, // Initial selected step
-            theme: 'default', // Theme (default, arrows, dots, progress)
-            justified: true, // Justifies the steps
-            darkMode: false, // Dark mode
-            autoAdjustHeight: true, // Automatically adjust content height
-            cycleSteps: false, // Cycle steps
-            backButtonSupport: true, // Back button support
-            enableURLhash: false, // Enable URL hash navigation
-            transition: {
-                animation: 'fade', // Animation effect (none/fade/slide-horizontal/slide-vertical)
-                speed: '400', // Animation speed
-                easing: '' // Easing type
-            }
-            , toolbarSettings: {
-                toolbarPosition: 'bottom', // Top or bottom
-                toolbarButtonPosition: 'right', // Left or right
-                showNextButton: true, // Show/hide next button
-                showPreviousButton: true, // Show/hide previous button
+            theme: 'default',
+            toolbarSettings: {
+                toolbarPosition: 'bottom',
+                toolbarButtonPosition: 'right',
+                showNextButton: true,
+                showPreviousButton: true,
                 toolbarExtraButtons: [
-                    $('<button type="submit" class="btn btn-success btn-finish">Simpan</button>')
+                    $('<button></button>').text('Simpan')
+                        .addClass('btn btn-success')
+                        .attr('id', 'btn-submit-form')
+                        .on('click', function() {
+                            // Validate all fields before submitting
+                            var form = document.getElementById('karyawanForm');
+                            if (form.checkValidity() && validateNikKk() && validateDepartemenBagian()) {
+                                form.submit();
+                            } else {
+                                // Trigger HTML5 validation
+                                form.reportValidity();
+                            }
+                        })
                 ]
+            },
+            lang: {
+                next: 'Selanjutnya',
+                previous: 'Sebelumnya'
             }
-            , anchorSettings: {
-                anchorClickable: true, // Enable/disable anchor clicking
-                enableAllAnchors: false, // Enable/disable all anchors
-                markDoneStep: true, // Mark done steps
-                markAllPreviousStepsAsDone: true, // Mark all previous steps as done
-                removeDoneStepOnNavigateBack: false, // Remove done step status on navigate back
-                enableAnchorOnDoneStep: true // Enable/disable done steps navigation
-            }
-            , keyboardSettings: {
-                keyNavigation: false
-            , }
-            , lang: { // Language variables for button text
-                next: 'Selanjutnya'
-                , previous: 'Sebelumnya'
-            }
-        });
-
-        // Get NIK Karyawan via Ajax
-        // Improved AJAX call for refreshNik button with error handling and debugging
-        $('#refreshNik').on('click', function() {
-            // Show a loading indicator or disable the button
-            $(this).prop('disabled', true);
-            $(this).find('i').addClass('fa-spin');
-
-            $.ajax({
-                url: "{{ route('karyawans.get-nik') }}"
-                , type: "GET"
-                , dataType: "json"
-                , headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                }
-                , success: function(response) {
-                    if (response && response.nik_karyawan) {
-                        $('#nik_karyawan').val(response.nik_karyawan);
-                        console.log("Successfully fetched new NIK:", response.nik_karyawan);
-                    } else {
-                        console.error("Response did not contain nik_karyawan:", response);
-                        alert("Format NIK tidak valid dari server. Harap hubungi administrator.");
-                    }
-                }
-                , error: function(xhr, status, error) {
-                    // More detailed error logging
-                    console.error("Status code:", xhr.status);
-                    console.error("Error response:", xhr.responseText);
-                    console.error("Error status:", status);
-                    console.error("Error message:", error);
-
-                    alert("Gagal mendapatkan NIK Karyawan baru. Error: " + error);
-                }
-                , complete: function() {
-                    // Re-enable the button and stop spinner regardless of outcome
-                    $('#refreshNik').prop('disabled', false);
-                    $('#refreshNik').find('i').removeClass('fa-spin');
-                }
-            });
         });
     });
-
 </script>
 @stop

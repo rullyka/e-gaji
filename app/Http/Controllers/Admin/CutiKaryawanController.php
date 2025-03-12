@@ -14,16 +14,24 @@ use Illuminate\Support\Facades\Storage;
 
 class CutiKaryawanController extends Controller
 {
+    /**
+     * Menampilkan daftar semua pengajuan cuti karyawan
+     */
     public function index()
     {
+        // Ambil semua data cuti dengan relasi terkait dan urutkan dari yang terbaru
         $cutiKaryawans = CutiKaryawan::with(['karyawan', 'masterCuti', 'supervisor', 'approver'])
             ->orderBy('created_at', 'desc')
             ->get();
         return view('admin.cuti_karyawans.index', compact('cutiKaryawans'));
     }
 
+    /**
+     * Menampilkan form untuk membuat pengajuan cuti baru
+     */
     public function create()
     {
+        // Siapkan data untuk dropdown di form
         $karyawans = Karyawan::orderBy('nama_karyawan')->get();
         $masterCutis = Mastercuti::where('cuti_max', '!=', null)->orderBy('uraian')->get();
         $jenisCuti = ['Izin', 'Cuti'];
@@ -31,8 +39,12 @@ class CutiKaryawanController extends Controller
         return view('admin.cuti_karyawans.create', compact('karyawans', 'masterCutis', 'jenisCuti'));
     }
 
+    /**
+     * Menyimpan data pengajuan cuti baru ke database
+     */
     public function store(Request $request)
     {
+        // Validasi input dari form
         $request->validate([
             'id_karyawan' => 'required|exists:karyawans,id',
             'jenis_cuti' => 'required|in:Izin,Cuti',
@@ -43,16 +55,16 @@ class CutiKaryawanController extends Controller
             'id_supervisor' => 'required|exists:karyawans,id',
         ]);
 
-        // Calculate number of days
+        // Hitung jumlah hari cuti
         $startDate = Carbon::parse($request->tanggal_mulai_cuti);
         $endDate = Carbon::parse($request->tanggal_akhir_cuti);
-        $jumlahHari = $startDate->diffInDays($endDate) + 1; // Including both start and end days
+        $jumlahHari = $startDate->diffInDays($endDate) + 1; // Termasuk hari awal dan akhir
 
         $data = $request->all();
         $data['jumlah_hari_cuti'] = $jumlahHari;
         $data['status_acc'] = 'Menunggu Persetujuan';
 
-        // Handle bukti upload
+        // Proses upload file bukti
         if ($request->hasFile('bukti')) {
             $bukti = $request->file('bukti');
             $buktiName = 'cuti-' . Str::slug($request->jenis_cuti) . '-' . time() . '.' . $bukti->getClientOriginalExtension();
@@ -60,31 +72,46 @@ class CutiKaryawanController extends Controller
             $data['bukti'] = $buktiName;
         }
 
+        // Simpan data cuti ke database
         CutiKaryawan::create($data);
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('cuti_karyawans.index')
             ->with('success', 'Pengajuan Cuti berhasil ditambahkan');
     }
 
+    /**
+     * Menampilkan detail pengajuan cuti tertentu
+     */
     public function show(CutiKaryawan $cutiKaryawan)
     {
+        // Muat relasi yang dibutuhkan untuk detail cuti
         $cutiKaryawan->load(['karyawan', 'masterCuti', 'supervisor', 'approver']);
         return view('admin.cuti_karyawans.show', compact('cutiKaryawan'));
     }
 
+    /**
+     * Menampilkan form untuk mengedit pengajuan cuti
+     */
     public function edit(CutiKaryawan $cutiKaryawan)
     {
+        // Siapkan data untuk dropdown di form edit
         $karyawans = Karyawan::orderBy('nama_karyawan')->get();
         $masterCutis = Mastercuti::where('cuti_max', '!=', null)->orderBy('uraian')->get();
         $jenisCuti = ['Izin', 'Cuti'];
 
+        // Muat relasi yang dibutuhkan
         $cutiKaryawan->load(['karyawan', 'masterCuti', 'supervisor', 'approver']);
 
         return view('admin.cuti_karyawans.edit', compact('cutiKaryawan', 'karyawans', 'masterCutis', 'jenisCuti'));
     }
 
+    /**
+     * Memperbarui data pengajuan cuti di database
+     */
     public function update(Request $request, CutiKaryawan $cutiKaryawan)
     {
+        // Validasi input dari form edit
         $request->validate([
             'id_karyawan' => 'required|exists:karyawans,id',
             'jenis_cuti' => 'required|in:Izin,Cuti',
@@ -95,23 +122,23 @@ class CutiKaryawanController extends Controller
             'id_supervisor' => 'required|exists:karyawans,id',
         ]);
 
-        // Calculate number of days
+        // Hitung jumlah hari cuti
         $startDate = Carbon::parse($request->tanggal_mulai_cuti);
         $endDate = Carbon::parse($request->tanggal_akhir_cuti);
-        $jumlahHari = $startDate->diffInDays($endDate) + 1; // Including both start and end days
+        $jumlahHari = $startDate->diffInDays($endDate) + 1; // Termasuk hari awal dan akhir
 
         $data = $request->all();
         $data['jumlah_hari_cuti'] = $jumlahHari;
 
-        // Only allow editing if the status is still "Menunggu Persetujuan"
+        // Cek apakah pengajuan masih bisa diedit (status masih menunggu)
         if ($cutiKaryawan->status_acc != 'Menunggu Persetujuan') {
             return redirect()->route('cuti_karyawans.index')
                 ->with('error', 'Tidak dapat mengedit pengajuan yang sudah diproses');
         }
 
-        // Handle bukti upload
+        // Proses upload file bukti baru jika ada
         if ($request->hasFile('bukti')) {
-            // Delete old bukti if exists
+            // Hapus file bukti lama jika ada
             if ($cutiKaryawan->bukti) {
                 Storage::delete('public/cuti/bukti/' . $cutiKaryawan->bukti);
             }
@@ -122,40 +149,51 @@ class CutiKaryawanController extends Controller
             $data['bukti'] = $buktiName;
         }
 
+        // Update data cuti di database
         $cutiKaryawan->update($data);
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('cuti_karyawans.index')
             ->with('success', 'Pengajuan Cuti berhasil diupdate');
     }
 
+    /**
+     * Menghapus data pengajuan cuti dari database
+     */
     public function destroy(CutiKaryawan $cutiKaryawan)
     {
-        // Only allow deleting if the status is still "Menunggu Persetujuan"
+        // Cek apakah pengajuan masih bisa dihapus (status masih menunggu)
         if ($cutiKaryawan->status_acc != 'Menunggu Persetujuan') {
             return redirect()->route('cuti_karyawans.index')
                 ->with('error', 'Tidak dapat menghapus pengajuan yang sudah diproses');
         }
 
-        // Delete the bukti file
+        // Hapus file bukti jika ada
         if ($cutiKaryawan->bukti) {
             Storage::delete('public/cuti/bukti/' . $cutiKaryawan->bukti);
         }
 
+        // Hapus data cuti
         $cutiKaryawan->delete();
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('cuti_karyawans.index')
             ->with('success', 'Pengajuan Cuti berhasil dihapus');
     }
 
+    /**
+     * Memproses persetujuan atau penolakan pengajuan cuti
+     */
     public function approve(Request $request, CutiKaryawan $cutiKaryawan)
     {
+        // Validasi input dari form approval
         $request->validate([
             'status_acc' => 'required|in:Disetujui,Ditolak',
             'keterangan_tolak' => 'required_if:status_acc,Ditolak',
             'cuti_disetujui' => 'required_if:status_acc,Disetujui',
         ]);
 
-        // Update approval details
+        // Update detail persetujuan
         $cutiKaryawan->status_acc = $request->status_acc;
         $cutiKaryawan->keterangan_tolak = $request->status_acc == 'Ditolak' ? $request->keterangan_tolak : null;
         $cutiKaryawan->cuti_disetujui = $request->status_acc == 'Disetujui' ? $request->cuti_disetujui : null;
@@ -163,12 +201,17 @@ class CutiKaryawanController extends Controller
         $cutiKaryawan->approved_by = Auth::id();
         $cutiKaryawan->save();
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('cuti_karyawans.index')
             ->with('success', 'Pengajuan Cuti berhasil ' . strtolower($request->status_acc));
     }
 
+    /**
+     * Menampilkan form untuk persetujuan pengajuan cuti
+     */
     public function approvalForm(CutiKaryawan $cutiKaryawan)
     {
+        // Muat relasi yang dibutuhkan untuk form approval
         $cutiKaryawan->load(['karyawan', 'masterCuti', 'supervisor']);
         return view('admin.cuti_karyawans.approval', compact('cutiKaryawan'));
     }

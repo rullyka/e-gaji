@@ -3,20 +3,20 @@
 </div>
 @extends('adminlte::page')
 
-@section('title', 'Program Studi Management')
+@section('title', 'Prodi / Jurusan Management')
 
 @section('content_header')
-<h1>Program Studi Management</h1>
+<h1>Prodi / Jurusan Management</h1>
 @stop
 
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">Program Studi List</h3>
+        <h3 class="card-title">Prodi / Jurusan List</h3>
         <div class="card-tools">
             @can_show('program_studi.create')
             <a href="{{ route('program_studis.create') }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Add New Program Studi
+                <i class="fas fa-plus"></i> Add New Prodi / Jurusan
             </a>
             @endcan_show
         </div>
@@ -44,7 +44,7 @@
             <thead>
                 <tr>
                     <th width="10">#</th>
-                    <th>Nama Program Studi</th>
+                    <th>Nama Prodi / Jurusan</th>
                     <th>Tanggal Dibuat</th>
                     @can_show('program_studi.edit')
                     <th width="150">Action</th>
@@ -77,27 +77,4 @@
         </table>
     </div>
 </div>
-@stop
-
-@section('css')
-<link rel="stylesheet" href="{{ asset('vendor/datatables/css/dataTables.bootstrap4.min.css') }}">
-@stop
-
-@section('js')
-<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
-<script src="{{ asset('vendor/datatables/js/dataTables.bootstrap4.min.js') }}"></script>
-<script>
-    $(function() {
-        $('#programStudiTable').DataTable({
-            "paging": true
-            , "lengthChange": true
-            , "searching": true
-            , "ordering": true
-            , "info": true
-            , "autoWidth": false
-            , "responsive": true
-        , });
-    });
-
-</script>
 @stop

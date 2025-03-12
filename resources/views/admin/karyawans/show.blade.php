@@ -15,13 +15,18 @@
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>
             @can_show('karyawan.edit')
+            @if(!$karyawan->tahun_keluar)
             <a href="{{ route('karyawans.edit', $karyawan) }}" class="btn btn-warning btn-sm">
                 <i class="fas fa-edit"></i> Edit
             </a>
+            @endif
             @endcan_show
         </div>
     </div>
-    <div class="card-body">
+    <div class="card-body position-relative">
+        @if($karyawan->tahun_keluar)
+        <div class="resign-watermark">RESIGN</div>
+        @endif
         <div class="row">
             <div class="col-md-3">
                 <div class="mb-4 text-center">
@@ -53,12 +58,12 @@
                             </tr>
                             <tr>
                                 <th>Tanggal Masuk</th>
-                                <td>{{ $karyawan->tgl_awalmmasuk->format('d-m-Y') }}</td>
+                                <td>{{ $karyawan->tgl_awalmmasuk ? date('d-m-Y', strtotime($karyawan->tgl_awalmmasuk)) : '-' }}</td>
                             </tr>
                             @if($karyawan->tahun_keluar)
                             <tr>
-                                <th>Tahun Keluar</th>
-                                <td>{{ $karyawan->tahun_keluar->format('d-m-Y') }}</td>
+                                <th>Tanggal Resign</th>
+                                <td>{{ is_string($karyawan->tahun_keluar) ? date('d-m-Y', strtotime($karyawan->tahun_keluar)) : $karyawan->tahun_keluar->format('d-m-Y') }}</td>
                             </tr>
                             @endif
                             <tr>
@@ -149,4 +154,28 @@
         </div>
     </div>
 </div>
+@stop
+
+@section('css')
+<style>
+    .position-relative {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .resign-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 120px;
+        font-weight: bold;
+        color: rgba(255, 0, 0, 0.2);
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 10;
+        text-transform: uppercase;
+        letter-spacing: 10px;
+    }
+</style>
 @stop

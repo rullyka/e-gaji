@@ -3,116 +3,188 @@
 @section('title', 'Manage Periode Gaji')
 
 @section('content_header')
-<h1>Manage Periode Gaji</h1>
+<div class="d-flex justify-content-between align-items-center">
+    <h1><i class="mr-2 fas fa-calendar-alt text-primary"></i>Manage Periode Gaji</h1>
+</div>
 @stop
 
 @section('content')
 @if(session('success'))
-<div class="alert alert-success alert-dismissible">
-    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-    <h5><i class="icon fas fa-check"></i> Success!</h5>
-    {{ session('success') }}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="mr-1 fas fa-check-circle"></i> {{ session('success') }}
+    <button type="button" class="close" data-dismiss="alert">
+        <span aria-hidden="true">&times;</span>
+    </button>
 </div>
 @endif
 
 @if(session('error'))
-<div class="alert alert-danger alert-dismissible">
-    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-    <h5><i class="icon fas fa-ban"></i> Error!</h5>
-    {{ session('error') }}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="mr-1 fas fa-exclamation-circle"></i> {{ session('error') }}
+    <button type="button" class="close" data-dismiss="alert">
+        <span aria-hidden="true">&times;</span>
+    </button>
 </div>
 @endif
 
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Periode Gaji List</h3>
-        <div class="card-tools">
-            <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#generateModal">
-                <i class="fas fa-calendar"></i> Generate Bulanan
-            </button>
-            <button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#generateWeeklyModal">
-                <i class="fas fa-calendar-week"></i> Generate Mingguan
-            </button>
-            <a href="{{ route('periodegaji.create') }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Add New
-            </a>
+<div class="row">
+    <!-- Left sidebar with years and months -->
+    <div class="col-md-4 col-lg-3">
+        <div class="card">
+            <div class="p-0 card-body">
+                <div class="p-3 compose-btn-container">
+                    <a href="{{ route('periodegaji.create') }}" class="btn btn-primary btn-block">
+                        <i class="mr-1 fas fa-plus"></i> Tambah Periode
+                    </a>
+                    <button type="button" class="mt-2 btn btn-success btn-block" data-toggle="modal" data-target="#generateModal">
+                        <i class="mr-1 fas fa-calendar"></i> Generate Bulanan
+                    </button>
+                    <button type="button" class="mt-2 btn btn-info btn-block" data-toggle="modal" data-target="#generateWeeklyModal">
+                        <i class="mr-1 fas fa-calendar-week"></i> Generate Mingguan
+                    </button>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action active filter-year" data-filter="all">
+                        <i class="mr-2 fas fa-calendar"></i> Semua Periode
+                        <span class="float-right badge badge-light">{{ count($periodeGajis) }}</span>
+                    </a>
+
+                    @php
+                        $years = $periodeGajis->groupBy(function($date) {
+                            return $date->tanggal_mulai->format('Y');
+                        });
+
+                        $currentYear = date('Y');
+                    @endphp
+
+                    @foreach($years as $year => $items)
+                        <a href="#" class="list-group-item list-group-item-action filter-year" data-filter="{{ $year }}" data-toggle="collapse" data-target="#months-{{ $year }}">
+                            <i class="mr-2 fas fa-calendar-alt"></i> {{ $year }}
+                            <span class="float-right badge badge-info">{{ count($items) }}</span>
+                        </a>
+
+                        <div id="months-{{ $year }}" class="collapse {{ $year == $currentYear ? 'show' : '' }}">
+                            @php
+                                $months = $items->groupBy(function($date) {
+                                    return $date->tanggal_mulai->format('m');
+                                });
+
+                                $monthNames = [
+                                    '01' => 'Januari',
+                                    '02' => 'Februari',
+                                    '03' => 'Maret',
+                                    '04' => 'April',
+                                    '05' => 'Mei',
+                                    '06' => 'Juni',
+                                    '07' => 'Juli',
+                                    '08' => 'Agustus',
+                                    '09' => 'September',
+                                    '10' => 'Oktober',
+                                    '11' => 'November',
+                                    '12' => 'Desember'
+                                ];
+                            @endphp
+
+                            @foreach($months as $month => $monthItems)
+                                <a href="#" class="pl-5 list-group-item list-group-item-action filter-month" data-year="{{ $year }}" data-month="{{ $month }}">
+                                    <i class="mr-2 fas fa-calendar-day"></i> {{ $monthNames[$month] }}
+                                    <span class="float-right badge badge-secondary">{{ count($monthItems) }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
-    <div class="card-body">
-        <form id="deleteMultipleForm" action="{{ url('/admin/periodegaji/delete-multiple') }}" method="POST">
-            @csrf
-            <div class="mb-3">
-                <button type="button" class="btn btn-danger btn-sm" id="deleteSelected" disabled>
-                    <i class="fas fa-trash"></i> Delete Selected
-                </button>
-            </div>
 
-            <table id="periodegaji-table" class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th width="50px">
-                            <div class="icheck-primary">
-                                <input type="checkbox" id="selectAll">
-                                <label for="selectAll"></label>
-                            </div>
-                        </th>
-                        <th>No</th>
-                        <th>Nama Periode</th>
-                        <th>Tanggal Mulai</th>
-                        <th>Tanggal Selesai</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($periodeGajis as $index => $periode)
-                    <tr>
-                        <td>
-                            <div class="icheck-primary">
-                                <input type="checkbox" class="periode-checkbox" id="check{{ $periode->id }}" name="ids[]" value="{{ $periode->id }}" {{ $periode->status == 'aktif' ? 'disabled' : '' }}>
-                                <label for="check{{ $periode->id }}"></label>
-                            </div>
-                        </td>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $periode->nama_periode }}</td>
-                        <td>{{ $periode->tanggal_mulai->format('d-m-Y') }}</td>
-                        <td>{{ $periode->tanggal_selesai->format('d-m-Y') }}</td>
-                        <td>
-                            @if($periode->status == 'aktif')
-                                <span class="badge badge-success">Aktif</span>
-                            @else
-                                <span class="badge badge-secondary">Nonaktif</span>
-                            @endif
-                        </td>
-                        <td>
-                            <a href="{{ route('periodegaji.show', $periode->id) }}" class="btn btn-info btn-sm">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{{ route('periodegaji.edit', $periode->id) }}" class="btn btn-warning btn-sm">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            @if($periode->status != 'aktif')
-                            <form action="{{ route('periodegaji.set-active', $periode->id) }}" method="POST" style="display: inline-block;">
-                                @csrf
-                                @method('PUT')
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="fas fa-check"></i> Set Aktif
-                                </button>
-                            </form>
-                            <form action="{{ route('periodegaji.destroy', $periode->id) }}" method="POST" style="display: inline-block;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this period?')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </form>
+    <!-- Right side with data table -->
+    <div class="col-md-8 col-lg-9">
+        <div class="card">
+            <div class="bg-white card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="card-title" id="current-filter">Semua Periode Gaji</h3>
+                    <div>
+                        <button type="button" class="btn btn-danger btn-sm" id="deleteSelected" disabled>
+                            <i class="fas fa-trash"></i> Delete Selected
+                        </button>
+                        <button type="button" class="btn btn-light" id="refreshBtn">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="deleteMultipleForm" action="{{ url('/admin/periodegaji/delete-multiple') }}" method="POST">
+                    @csrf
+                    <table id="periodegaji-table" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th width="50px">
+                                    <div class="icheck-primary">
+                                        <input type="checkbox" id="selectAll">
+                                        <label for="selectAll"></label>
+                                    </div>
+                                </th>
+                                <th>No</th>
+                                <th>Nama Periode</th>
+                                <th>Tanggal Mulai</th>
+                                <th>Tanggal Selesai</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($periodeGajis as $index => $periode)
+                            <tr data-id="{{ $periode->id }}" data-year="{{ $periode->tanggal_mulai->format('Y') }}" data-month="{{ $periode->tanggal_mulai->format('m') }}">
+                                <td>
+                                    <div class="icheck-primary">
+                                        <input type="checkbox" class="periode-checkbox" id="check{{ $periode->id }}" name="ids[]" value="{{ $periode->id }}" {{ $periode->status == 'aktif' ? 'disabled' : '' }}>
+                                        <label for="check{{ $periode->id }}"></label>
+                                    </div>
+                                </td>
+                                <td>{{ $index + 1 }}</td>
+                                <td>{{ $periode->nama_periode }}</td>
+                                <td>{{ $periode->tanggal_mulai->format('d-m-Y') }}</td>
+                                <td>{{ $periode->tanggal_selesai->format('d-m-Y') }}</td>
+                                <td>
+                                    @if($periode->status == 'aktif')
+                                        <span class="badge badge-success">Aktif</span>
+                                    @else
+                                        <span class="badge badge-secondary">Nonaktif</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <a href="{{ route('periodegaji.show', $periode->id) }}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('periodegaji.edit', $periode->id) }}" class="btn btn-warning btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    @if($periode->status != 'aktif')
+                                    <form action="{{ route('periodegaji.set-active', $periode->id) }}" method="POST" style="display: inline-block;">
+                                        @csrf
+                                        @method('PUT')
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('periodegaji.destroy', $periode->id) }}" method="POST" style="display: inline-block;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this period?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -217,13 +289,97 @@
 @stop
 
 @section('css')
+<link rel="stylesheet" href="{{ asset('vendor/datatables/css/dataTables.bootstrap4.min.css') }}">
 <link rel="stylesheet" href="{{ asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css') }}">
+<style>
+    /* Left sidebar styles */
+    .list-group-item {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+    }
+
+    .list-group-item.active {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+        border-color: #e0e0e0;
+        font-weight: 600;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:hover:not(.active) {
+        background-color: #f8f9fa;
+    }
+
+    .list-group-item i {
+        margin-right: 8px;
+        min-width: 16px;
+    }
+
+    .list-group-item .badge {
+        margin-left: auto;
+        min-width: 28px;
+        text-align: center;
+        padding: 4px 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-light {
+        background-color: #f8f9fa;
+        color: #212529;
+    }
+
+    .badge-info {
+        background-color: #e1f5fe;
+        color: #0288d1;
+    }
+
+    .badge-secondary {
+        background-color: #eceff1;
+        color: #455a64;
+    }
+
+    .compose-btn-container {
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .card {
+        border-radius: 8px;
+        border: 1px solid #dadce0;
+        box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        border-bottom: 1px solid #dadce0;
+        padding: 12px 16px;
+    }
+
+    #refreshBtn {
+        background-color: #f8f9fa;
+        border-color: #dadce0;
+    }
+
+    #refreshBtn:hover {
+        background-color: #f1f3f4;
+    }
+</style>
 @stop
 
 @section('js')
+<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+<script src="{{ asset('vendor/datatables/js/dataTables.bootstrap4.min.js') }}"></script>
 <script>
-    $(function () {
-        $('#periodegaji-table').DataTable({
+    $(function() {
+        // Initialize DataTable
+        var table = $('#periodegaji-table').DataTable({
             "paging": true,
             "lengthChange": true,
             "searching": true,
@@ -231,6 +387,60 @@
             "info": true,
             "autoWidth": false,
             "responsive": true,
+            "order": [[3, 'desc']], // Urutkan berdasarkan tanggal mulai
+            "columnDefs": [
+                {
+                    "targets": 0,
+                    "orderable": false
+                },
+                {
+                    "targets": 1,
+                    "render": function (data, type, row, meta) {
+                        return meta.row + 1;
+                    }
+                }
+            ]
+        });
+
+        // Filter by year
+        $('.filter-year').click(function(e) {
+            if (!$(e.target).hasClass('badge')) {
+                e.preventDefault();
+
+                // Only apply filter if not clicking on collapse toggle
+                if (!$(this).data('toggle') || $(this).data('filter') === 'all') {
+                    $('.filter-year, .filter-month').removeClass('active');
+                    $(this).addClass('active');
+
+                    var filter = $(this).data('filter');
+
+                    if (filter === 'all') {
+                        // Tampilkan semua data
+                        table.search('').draw();
+                        $('#current-filter').text('Semua Periode Gaji');
+                    } else {
+                        // Cari berdasarkan tahun
+                        table.search(filter).draw();
+                        $('#current-filter').text('Periode Gaji Tahun ' + filter);
+                    }
+                }
+            }
+        });
+
+        // Filter by month
+        $('.filter-month').click(function(e) {
+            e.preventDefault();
+
+            $('.filter-year, .filter-month').removeClass('active');
+            $(this).addClass('active');
+
+            var year = $(this).data('year');
+            var month = $(this).data('month');
+            var monthName = $(this).text().trim().split(' ')[0];
+
+            // Cari berdasarkan bulan dan tahun
+            table.search(month + '-' + year).draw();
+            $('#current-filter').text('Periode Gaji ' + monthName + ' ' + year);
         });
 
         // Handle select all checkbox
@@ -269,6 +479,14 @@
                 $('#deleteSelected').prop('disabled', true);
             }
         }
+
+        // Refresh button
+        $('#refreshBtn').click(function() {
+            $(this).find('i').addClass('fa-spin');
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        });
     });
 </script>
 @stop

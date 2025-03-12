@@ -3,139 +3,464 @@
 @section('title', 'Data Lembur Karyawan')
 
 @section('content_header')
-<h1>Data Lembur Karyawan</h1>
+<div class="d-flex justify-content-between align-items-center">
+    <h1><i class="mr-2 fas fa-clock text-primary"></i>Pengajuan Lembur Karyawan</h1>
+</div>
 @stop
 
 @section('content')
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title">Daftar Pengajuan Lembur</h3>
-        <div class="card-tools">
-            @can_show('lemburs.create')
-            <a href="{{ route('lemburs.create') }}" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus"></i> Ajukan Lembur
-            </a>
-            @endcan_show
+@if(session('success'))
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="mr-1 fas fa-check-circle"></i> {{ session('success') }}
+    <button type="button" class="close" data-dismiss="alert">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
+
+@if(session('error'))
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="mr-1 fas fa-exclamation-circle"></i> {{ session('error') }}
+    <button type="button" class="close" data-dismiss="alert">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+@endif
+
+<div class="row">
+    <!-- Left sidebar with categories -->
+    <div class="col-md-3 col-lg-2">
+        <div class="card">
+            <div class="p-0 card-body">
+                <div class="p-3 compose-btn-container">
+                    @can_show('lemburs.create')
+                    <a href="{{ route('lemburs.create') }}" class="btn btn-primary btn-block">
+                        <i class="mr-1 fas fa-plus"></i> Ajukan Lembur
+                    </a>
+                    @endcan_show
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action active filter-category" data-filter="all">
+                        <i class="mr-2 fas fa-inbox"></i> Semua
+                        <span class="float-right badge badge-light">{{ count($lemburs) }}</span>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Menunggu Persetujuan">
+                        <i class="mr-2 fas fa-clock text-warning"></i> Menunggu
+                        <span class="float-right badge badge-warning">{{ $lemburs->where('status', 'Menunggu Persetujuan')->count() }}</span>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Disetujui">
+                        <i class="mr-2 fas fa-check text-success"></i> Disetujui
+                        <span class="float-right badge badge-success">{{ $lemburs->where('status', 'Disetujui')->count() }}</span>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Ditolak">
+                        <i class="mr-2 fas fa-times text-danger"></i> Ditolak
+                        <span class="float-right badge badge-danger">{{ $lemburs->where('status', 'Ditolak')->count() }}</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="card-body">
-        @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        @endif
 
-        @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="close" data-dismiss="alert">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        @endif
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped" id="lemburTable">
-                <thead>
-                    <tr>
-                        <th width="10">#</th>
-                        <th>Nama Karyawan</th>
-                        <th>Jenis Lembur</th>
-                        <th>Tanggal</th>
-                        <th>Waktu</th>
-                        <th>Total</th>
-                        <th>Supervisor</th>
-                        <th>Status</th>
-                        <th>Tanggal Pengajuan</th>
-                        <th width="150">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
+    <!-- Right side with inbox -->
+    <div class="col-md-9 col-lg-10">
+        <div class="card">
+            <div class="bg-white card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="mr-2 input-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Cari pengajuan...">
+                            <div class="input-group-append">
+                                <span class="bg-transparent input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-light" id="refreshBtn">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-0 card-body">
+                <div class="inbox-container">
                     @foreach($lemburs as $index => $lembur)
-                    <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $lembur->karyawan ? $lembur->karyawan->nama_karyawan : '-' }}</td>
-                        <td>{{ $lembur->jenis_lembur }}</td>
-                        <td>{{ $lembur->tanggal_lembur_formatted }}</td>
-                        <td>{{ $lembur->jam_mulai_formatted }} - {{ $lembur->jam_selesai_formatted }}</td>
-                        <td>{{ $lembur->total_lembur }}</td>
-                        <td>{{ $lembur->supervisor ? $lembur->supervisor->nama_karyawan : '-' }}</td>
-                        <td>
-                            <span class="badge {{ $lembur->status_badge_class }}">
-                                {{ $lembur->status }}
-                            </span>
-                        </td>
-                        <td>{{ $lembur->created_at->format('d-m-Y') }}</td>
-                        <td>
-                            <a href="{{ route('lemburs.show', $lembur) }}" class="btn btn-info btn-sm">
+                    <div class="inbox-item {{ $lembur->status == 'Menunggu Persetujuan' ? 'unread' : '' }}" data-status="{{ $lembur->status }}">
+                        <div class="inbox-item-checkbox">
+                            <div class="icheck-primary">
+                                <input type="checkbox" id="check{{ $lembur->id }}">
+                                <label for="check{{ $lembur->id }}"></label>
+                            </div>
+                        </div>
+                        <div class="inbox-item-star">
+                            @if($lembur->status == 'Menunggu Persetujuan')
+                            <i class="fas fa-circle text-warning"></i>
+                            @elseif($lembur->status == 'Disetujui')
+                            <i class="fas fa-check-circle text-success"></i>
+                            @elseif($lembur->status == 'Ditolak')
+                            <i class="fas fa-times-circle text-danger"></i>
+                            @endif
+                        </div>
+                        <div class="inbox-item-sender">
+                            <span class="sender-name">{{ $lembur->karyawan ? $lembur->karyawan->nama_karyawan : '-' }}</span>
+                        </div>
+                        <div class="inbox-item-subject">
+                            <span class="mr-1 badge badge-info">{{ $lembur->jenis_lembur }}</span>
+                            Lembur {{ $lembur->tanggal_lembur_formatted }}
+                        </div>
+                        <div class="inbox-item-date">
+                            <span class="date">{{ $lembur->jam_mulai_formatted }} - {{ $lembur->jam_selesai_formatted }}</span>
+                            <span class="ml-2 days">({{ $lembur->total_lembur }})</span>
+                        </div>
+                        <div class="inbox-item-actions">
+                            <a href="{{ route('lemburs.show', $lembur) }}" class="btn btn-sm btn-light" title="Lihat Detail">
                                 <i class="fas fa-eye"></i>
                             </a>
 
                             @if($lembur->status == 'Menunggu Persetujuan')
-                            @can_show('lemburs.edit')
-                            <a href="{{ route('lemburs.edit', $lembur) }}" class="btn btn-warning btn-sm">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            @endcan_show
+                                @can_show('lemburs.edit')
+                                <a href="{{ route('lemburs.edit', $lembur) }}" class="btn btn-sm btn-light" title="Edit Pengajuan">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                @endcan_show
 
-                            @can_show('lemburs.approve')
-                            <a href="{{ route('lemburs.approval', $lembur) }}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-check"></i>
-                            </a>
-                            @endcan_show
+                                @can_show('lemburs.approve')
+                                <a href="{{ route('lemburs.approval', $lembur) }}" class="btn btn-sm btn-primary" title="Proses Pengajuan">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                                @endcan_show
 
-                            @can_show('lemburs.delete')
-                            <form action="{{ route('lemburs.destroy', $lembur) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                            @endcan_show
+                                @can_show('lemburs.delete')
+                                <form action="{{ route('lemburs.destroy', $lembur) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-light" title="Hapus Pengajuan" onclick="return confirm('Apakah Anda yakin ingin menghapus pengajuan ini?')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                @endcan_show
                             @else
-                            <!-- View only options for approved/rejected requests -->
-                            @can_show('lemburs.approve')
-                            <a href="{{ route('lemburs.approval', $lembur) }}" class="btn btn-secondary btn-sm">
-                                <i class="fas fa-info"></i>
-                            </a>
-                            @endcan_show
+                                @can_show('lemburs.approve')
+                                <a href="{{ route('lemburs.approval', $lembur) }}" class="btn btn-sm btn-light" title="Lihat Detail Persetujuan">
+                                    <i class="fas fa-info-circle"></i>
+                                </a>
+                                @endcan_show
                             @endif
-                        </td>
-                    </tr>
+                        </div>
+                    </div>
                     @endforeach
-                </tbody>
-            </table>
+
+                    @if(count($lemburs) == 0)
+                    <div class="py-5 text-center">
+                        <p class="text-muted">Tidak ada pengajuan lembur yang ditemukan</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 </div>
 @stop
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('vendor/datatables/css/dataTables.bootstrap4.min.css') }}">
-@stop
+<style>
+    .inbox-container {
+        border-top: 1px solid #e0e0e0;
+    }
 
+    .inbox-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .inbox-item:hover {
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        z-index: 1;
+        position: relative;
+    }
+
+    .inbox-item.unread {
+        background-color: #f2f6fc;
+        font-weight: 500;
+    }
+
+    .inbox-item-checkbox {
+        width: 30px;
+    }
+
+    .inbox-item-star {
+        width: 30px;
+        text-align: center;
+    }
+
+    .inbox-item-sender {
+        width: 180px;
+        padding-right: 15px;
+    }
+
+    .sender-name {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .inbox-item-subject {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-right: 15px;
+        color: #5f6368;
+    }
+
+    .inbox-item.unread .inbox-item-subject {
+        color: #202124;
+    }
+
+    .inbox-item-date {
+        width: 100px;
+        text-align: right;
+        color: #5f6368;
+        font-size: 0.85rem;
+    }
+
+    .inbox-item-actions {
+        width: 120px;
+        text-align: right;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .inbox-item:hover .inbox-item-actions {
+        opacity: 1;
+    }
+
+    /* Left sidebar styles */
+    .list-group-item {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        padding: 12px 15px;
+    }
+
+    .list-group-item.active {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+        border-color: #e0e0e0;
+        font-weight: 600;
+    }
+
+    .list-group-item:first-child {
+        border-top: none;
+    }
+
+    .list-group-item:hover:not(.active) {
+        background-color: #f8f9fa;
+    }
+
+    .badge-warning {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .badge-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .compose-btn-container {
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .btn-light {
+        background-color: #f8f9fa;
+        border-color: #dadce0;
+    }
+
+    .btn-light:hover {
+        background-color: #f1f3f4;
+    }
+
+    .card {
+        border-radius: 8px;
+        border: 1px solid #dadce0;
+        box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        border-bottom: 1px solid #dadce0;
+        padding: 12px 16px;
+    }
+
+    #searchInput {
+        border-radius: 24px;
+        padding-left: 15px;
+        background-color: #f1f3f4;
+        border: none;
+        height: 40px;
+    }
+
+    #searchInput:focus {
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .input-group-text {
+        border: none;
+        background-color: transparent;
+    }
+
+    @media (max-width: 992px) {
+        .inbox-item-date {
+            width: 80px;
+        }
+
+        .inbox-item-sender {
+            width: 150px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .inbox-item {
+            flex-wrap: wrap;
+        }
+
+        .inbox-item-sender {
+            width: calc(100% - 60px);
+            order: 1;
+        }
+
+        .inbox-item-checkbox {
+            order: 0;
+        }
+
+        .inbox-item-star {
+            order: 2;
+        }
+
+        .inbox-item-subject {
+            width: 100%;
+            order: 3;
+            padding-left: 30px;
+            margin-top: 5px;
+        }
+
+        .inbox-item-date {
+            width: 50%;
+            order: 4;
+            text-align: left;
+            padding-left: 30px;
+            margin-top: 5px;
+        }
+
+        .inbox-item-actions {
+            width: 50%;
+            order: 5;
+            text-align: right;
+            margin-top: 5px;
+            opacity: 1;
+        }
+    }
+</style>
+@stop
 @section('js')
-<script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
-<script src="{{ asset('vendor/datatables/js/dataTables.bootstrap4.min.js') }}"></script>
 <script>
     $(function() {
-        $('#lemburTable').DataTable({
-            "paging": true
-            , "lengthChange": true
-            , "searching": true
-            , "ordering": true
-            , "info": true
-            , "autoWidth": false
-            , "responsive": true
-            , "language": {
-                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
+        // Filter functionality using left sidebar
+        $('.filter-category').click(function(e) {
+            e.preventDefault();
+            $('.filter-category').removeClass('active');
+            $(this).addClass('active');
+
+            var filter = $(this).data('filter');
+
+            if (filter === 'all') {
+                $('.inbox-item').show();
+            } else {
+                $('.inbox-item').hide();
+                $('.inbox-item[data-status="' + filter + '"]').show();
+            }
+
+            updateEmptyState();
+        });
+
+        // Search functionality
+        $('#searchInput').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            var visibleCount = 0;
+
+            $('.inbox-item').each(function() {
+                var text = $(this).text().toLowerCase();
+                var isVisible = text.indexOf(value) > -1;
+                $(this).toggle(isVisible);
+
+                if (isVisible) {
+                    visibleCount++;
+                }
+            });
+
+            updateEmptyState();
+        });
+
+        // Refresh button
+        $('#refreshBtn').click(function() {
+            $(this).find('i').addClass('fa-spin');
+            setTimeout(function() {
+                location.reload();
+            }, 500);
+        });
+
+        // Click on row to view details
+        $('.inbox-item').click(function(e) {
+            if (!$(e.target).is('input[type="checkbox"]') &&
+                !$(e.target).is('button') &&
+                !$(e.target).is('a') &&
+                !$(e.target).is('i') &&
+                !$(e.target).closest('button').length &&
+                !$(e.target).closest('a').length) {
+                var detailUrl = $(this).find('a[title="Lihat Detail"]').attr('href');
+                if (detailUrl) {
+                    window.location.href = detailUrl;
+                }
             }
         });
-    });
 
+        // Prevent checkbox from triggering row click
+        $('.inbox-item-checkbox input').click(function(e) {
+            e.stopPropagation();
+        });
+
+        // Function to show/hide empty state
+        function updateEmptyState() {
+            var visibleItems = $('.inbox-item:visible').length;
+
+            if (visibleItems === 0) {
+                if ($('.empty-state').length === 0) {
+                    $('.inbox-container').append(`
+                        <div class="py-5 text-center empty-state">
+                            <p class="text-muted">Tidak ada pengajuan lembur yang sesuai dengan filter</p>
+                        </div>
+                    `);
+                }
+            } else {
+                $('.empty-state').remove();
+            }
+        }
+
+        // Set first filter as active by default
+        $('.filter-btn[data-filter="all"]').addClass('active');
+    });
 </script>
 @stop

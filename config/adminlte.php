@@ -49,6 +49,11 @@ return [
 
     'google_fonts' => [
         'allowed' => true,
+        'families' => [
+            'Roboto:300,400,500,700',
+            'Source Sans Pro:300,400,600,700',
+            'Nunito:300,400,600,700',
+        ],
     ],
 
     /*
@@ -156,7 +161,7 @@ return [
     'layout_boxed' => null,
     'layout_fixed_sidebar' => true,
     'layout_fixed_navbar' => true,
-    'layout_fixed_footer' => null,
+    'layout_fixed_footer' => true,
     'layout_dark_mode' => null,
 
     /*
@@ -300,13 +305,13 @@ return [
 
     'menu' => [
         ['header' => 'TEST'],
-    [
-        'text' => 'Test Parent',
-        'icon' => 'fas fa-cogs',
-        'submenu' => [
-            ['text' => 'Test Child', 'route' => 'admin.dashboard']
+        [
+            'text' => 'Test Parent',
+            'icon' => 'fas fa-cogs',
+            'submenu' => [
+                ['text' => 'Test Child', 'route' => 'admin.dashboard']
+            ]
         ]
-    ]
         // Navbar items:
 
         // [

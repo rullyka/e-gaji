@@ -10,41 +10,41 @@ use Spatie\Permission\Models\Permission;
 class PermissionService
 {
     /**
-     * Standard CRUD actions to their permission equivalents
+     * Pemetaan aksi CRUD standar ke izin yang setara
      */
     protected $actionMap = [
-        'index' => 'view',
-        'show' => 'view',
-        'create' => 'create',
-        'store' => 'create',
-        'edit' => 'edit',
-        'update' => 'edit',
-        'destroy' => 'delete',
-        // Add additional mappings as needed
-        'list' => 'view',
-        'display' => 'view',
-        'remove' => 'delete',
-        'save' => 'create',
+        'index' => 'view',      // Melihat daftar
+        'show' => 'view',       // Melihat detail
+        'create' => 'create',   // Membuat form
+        'store' => 'create',    // Menyimpan data baru
+        'edit' => 'edit',       // Mengedit form
+        'update' => 'edit',     // Memperbarui data
+        'destroy' => 'delete',  // Menghapus data
+        // Pemetaan tambahan
+        'list' => 'view',       // Melihat daftar
+        'display' => 'view',    // Menampilkan data
+        'remove' => 'delete',   // Menghapus data
+        'save' => 'create',     // Menyimpan data
     ];
 
     /**
-     * Methods that should be excluded from permission generation
+     * Metode yang harus dikecualikan dari pembuatan izin
      */
     protected $excludedMethods = [
-        '__construct',
-        'middleware',
-        'authorize',
-        'validateRequest',
-        'callAction',
-        'getMiddleware',
-        'getValidationFactory',
-        'validate',
-        'validateWith',
-        'dispatchNow',
+        '__construct',          // Konstruktor
+        'middleware',           // Middleware
+        'authorize',            // Otorisasi
+        'validateRequest',      // Validasi permintaan
+        'callAction',           // Memanggil aksi
+        'getMiddleware',        // Mendapatkan middleware
+        'getValidationFactory', // Mendapatkan factory validasi
+        'validate',             // Validasi
+        'validateWith',         // Validasi dengan
+        'dispatchNow',          // Dispatch sekarang
     ];
 
     /**
-     * Detect all permissions from controller
+     * Mendeteksi semua izin dari controller
      */
     public function detectPermissions($controller)
     {
@@ -55,12 +55,12 @@ class PermissionService
         $permissions = [];
 
         foreach ($methods as $method) {
-            // Skip methods from parent Controller class
+            // Lewati metode dari kelas Controller induk
             if ($method->class === 'App\\Http\\Controllers\\Controller') {
                 continue;
             }
 
-            // Skip methods from traits
+            // Lewati metode dari traits
             if ($method->class !== $controller) {
                 continue;
             }
@@ -77,19 +77,19 @@ class PermissionService
     }
 
     /**
-     * Generate permission name from method
+     * Membuat nama izin dari metode
      */
     protected function generatePermissionFromMethod($controller, $method)
     {
-        // Check if method is in the action map
+        // Periksa apakah metode ada dalam peta aksi
         foreach ($this->actionMap as $action => $permission) {
             if ($method === $action || Str::startsWith($method, $action)) {
                 return $controller . '.' . $permission;
             }
         }
 
-        // For custom methods that don't match standard patterns,
-        // create a permission with the method name itself
+        // Untuk metode kustom yang tidak cocok dengan pola standar,
+        // buat izin dengan nama metode itu sendiri
         if (!Str::startsWith($method, ['get', 'set', '_'])) {
             return $controller . '.' . $method;
         }
@@ -98,30 +98,30 @@ class PermissionService
     }
 
     /**
-     * Get controller name for permission
+     * Mendapatkan nama controller untuk izin
      */
     protected function getControllerName($controller)
     {
         $name = class_basename($controller);
         $name = str_replace('Controller', '', $name);
 
-        // Convert to kebab case (e.g., UserAccess => user-access)
-        // and then to snake case for the permission name (e.g., user-access => user_access)
+        // Konversi ke kebab case (mis., UserAccess => user-access)
+        // dan kemudian ke snake case untuk nama izin (mis., user-access => user_access)
         $kebab = Str::kebab($name);
 
-        // Determine if we should pluralize based on controller name
-        // For example, UserController becomes users, but UserAccessController becomes user_access
+        // Tentukan apakah kita harus menjamakkan berdasarkan nama controller
+        // Misalnya, UserController menjadi users, tetapi UserAccessController menjadi user_access
         if (!Str::contains($kebab, '-')) {
-            // Simple controller name, pluralize it (e.g., user => users)
+            // Nama controller sederhana, jamakkan (mis., user => users)
             return Str::plural($kebab);
         } else {
-            // Complex name, don't pluralize (e.g., user-access stays as user_access)
+            // Nama kompleks, jangan jamakkan (mis., user-access tetap user_access)
             return str_replace('-', '_', $kebab);
         }
     }
 
     /**
-     * Check if method needs permission generation
+     * Memeriksa apakah metode memerlukan pembuatan izin
      */
     protected function shouldGeneratePermission($methodName)
     {
@@ -130,7 +130,7 @@ class PermissionService
     }
 
     /**
-     * Sync permissions to database
+     * Sinkronisasi izin ke database
      */
     public function syncPermissions($permissions)
     {

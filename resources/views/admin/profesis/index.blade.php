@@ -54,7 +54,7 @@
                 <tr data-id="{{ $profesi->id }}">
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $profesi->name_profesi }}</td>
-                    <td>{{ $profesi->tunjangan_profesi }}</td>
+                    <td class="text-right">Rp {{ number_format($profesi->tunjangan_profesi, 0, ',', '.') }}</td>
                     <td>{{ $profesi->created_at->format('d-m-Y H:i:s') }}</td>
                     @can_show('profesis.edit')
                     <td>

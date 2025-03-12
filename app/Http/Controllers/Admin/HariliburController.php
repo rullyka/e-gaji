@@ -10,71 +10,102 @@ use Illuminate\Support\Facades\DB;
 
 class HariliburController extends Controller
 {
+    /**
+     * Menampilkan daftar semua hari libur
+     */
     public function index()
     {
+        // Ambil semua data hari libur dan urutkan dari tanggal terbaru
         $hariliburs = Harilibur::orderBy('tanggal', 'desc')->get();
         return view('admin.hariliburs.index', compact('hariliburs'));
     }
 
+    /**
+     * Menampilkan form untuk membuat hari libur baru
+     */
     public function create()
     {
         return view('admin.hariliburs.create');
     }
 
+    /**
+     * Menyimpan data hari libur baru ke database
+     */
     public function store(Request $request)
     {
+        // Validasi input dari form
         $request->validate([
             'tanggal' => 'required|date|unique:hariliburs,tanggal',
             'nama_libur' => 'required|string|max:255',
             'keterangan' => 'nullable|string',
         ]);
 
+        // Simpan data hari libur ke database
         Harilibur::create($request->all());
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('hariliburs.index')
             ->with('success', 'Hari Libur berhasil ditambahkan');
     }
 
+    /**
+     * Menampilkan detail hari libur tertentu
+     */
     public function show(Harilibur $harilibur)
     {
         return view('admin.hariliburs.show', compact('harilibur'));
     }
 
+    /**
+     * Menampilkan form untuk mengedit hari libur
+     */
     public function edit(Harilibur $harilibur)
     {
         return view('admin.hariliburs.edit', compact('harilibur'));
     }
 
+    /**
+     * Memperbarui data hari libur di database
+     */
     public function update(Request $request, Harilibur $harilibur)
     {
+        // Validasi input dari form edit
         $request->validate([
             'tanggal' => 'required|date|unique:hariliburs,tanggal,'.$harilibur->id,
             'nama_libur' => 'required|string|max:255',
             'keterangan' => 'nullable|string',
         ]);
 
+        // Update data hari libur di database
         $harilibur->update($request->all());
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('hariliburs.index')
             ->with('success', 'Hari Libur berhasil diupdate');
     }
 
+    /**
+     * Menghapus data hari libur dari database
+     */
     public function destroy(Harilibur $harilibur)
     {
+        // Hapus data hari libur
         $harilibur->delete();
+
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('hariliburs.index')
             ->with('success', 'Hari Libur berhasil dihapus');
     }
 
     /**
-     * Show form to generate Sundays for a specific year
+     * Menampilkan form untuk generate hari Minggu dalam satu tahun
      */
     public function generateSundaysForm()
     {
         $currentYear = date('Y');
         $yearOptions = [];
 
-        // Generate year options (current year and next 5 years)
+        // Buat opsi tahun (tahun sekarang dan 5 tahun ke depan)
         for ($i = 0; $i < 6; $i++) {
             $year = $currentYear + $i;
             $yearOptions[$year] = $year;
@@ -84,10 +115,11 @@ class HariliburController extends Controller
     }
 
     /**
-     * Generate all Sundays for the specified year
+     * Generate semua hari Minggu untuk tahun yang dipilih
      */
     public function generateSundays(Request $request)
     {
+        // Validasi input dari form
         $request->validate([
             'year' => 'required|integer|min:2000|max:2099',
             'replace_existing' => 'nullable|boolean',
@@ -97,29 +129,30 @@ class HariliburController extends Controller
         $replaceExisting = $request->has('replace_existing');
 
         try {
+            // Mulai transaksi database
             DB::beginTransaction();
 
-            // If requested to replace existing Sunday entries for the year
+            // Jika diminta untuk mengganti entri hari Minggu yang sudah ada
             if ($replaceExisting) {
-                // Delete all Sunday holidays for the selected year
+                // Hapus semua hari libur Minggu untuk tahun yang dipilih
                 Harilibur::where('nama_libur', 'Hari Minggu')
                     ->whereYear('tanggal', $year)
                     ->delete();
             }
 
-            // Find all Sundays for the given year
+            // Cari semua hari Minggu untuk tahun yang dipilih
             $startDate = Carbon::createFromDate($year, 1, 1);
             $endDate = Carbon::createFromDate($year, 12, 31);
 
             $sundays = [];
             $date = $startDate->copy()->startOfWeek(Carbon::SUNDAY);
 
-            // If the first Sunday is before the start of the year, add 7 days
+            // Jika Minggu pertama sebelum awal tahun, tambah 7 hari
             if ($date->lt($startDate)) {
                 $date->addWeek();
             }
 
-            // Create all Sundays for the year
+            // Buat semua hari Minggu untuk tahun tersebut
             while ($date->lte($endDate)) {
                 $sundays[] = [
                     'tanggal' => $date->format('Y-m-d'),
@@ -132,9 +165,9 @@ class HariliburController extends Controller
                 $date->addWeek();
             }
 
-            // Insert all sundays that don't exist yet
+            // Masukkan semua hari Minggu yang belum ada
             foreach ($sundays as $sunday) {
-                // Skip if the date already exists and we're not replacing
+                // Lewati jika tanggal sudah ada dan tidak diminta untuk mengganti
                 if (!$replaceExisting && Harilibur::where('tanggal', $sunday['tanggal'])->exists()) {
                     continue;
                 }
@@ -142,11 +175,14 @@ class HariliburController extends Controller
                 Harilibur::create($sunday);
             }
 
+            // Commit transaksi database
             DB::commit();
 
+            // Redirect ke halaman index dengan pesan sukses
             return redirect()->route('hariliburs.index')
                 ->with('success', count($sundays) . ' Hari Minggu untuk tahun ' . $year . ' berhasil dibuat');
         } catch (\Exception $e) {
+            // Rollback transaksi jika terjadi error
             DB::rollBack();
             return redirect()->route('hariliburs.index')
                 ->with('error', 'Gagal membuat Hari Minggu: ' . $e->getMessage());

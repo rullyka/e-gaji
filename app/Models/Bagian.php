@@ -11,18 +11,26 @@ class Bagian extends Model
 {
     use HasFactory, HasUuids;
 
+    // Menentukan nama tabel yang digunakan oleh model ini
     protected $table = 'bagians';
+
+    // Menentukan primary key dari tabel
     protected $primaryKey = 'id';
+
+    // Menentukan tipe data dari primary key
     protected $keyType = 'string';
+
+    // Menentukan bahwa primary key tidak auto increment
     public $incrementing = false;
 
+    // Atribut yang dapat diisi secara massal
     protected $fillable = [
-        'name_bagian',
-        'id_departemen',
+        'name_bagian', // Nama bagian
+        'id_departemen', // ID departemen yang terkait
     ];
 
     /**
-     * Relationship with Karyawan
+     * Relasi dengan model Karyawan
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
@@ -32,7 +40,7 @@ class Bagian extends Model
     }
 
     /**
-     * Relationship with Departemen
+     * Relasi dengan model Departemen
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */

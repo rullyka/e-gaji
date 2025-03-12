@@ -12,19 +12,21 @@ use App\Models\MesinAbsensi;
 class AbsensiController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar semua absensi
      */
     public function index()
     {
+        // Ambil semua data absensi dengan relasi terkait dan urutkan dari yang terbaru
         $absensis = Absensi::with(['karyawan', 'jadwalKerja', 'mesinAbsensiMasuk', 'mesinAbsensiPulang'])->latest()->get();
         return view('admin.absensis.index', compact('absensis'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Menampilkan form untuk membuat absensi baru
      */
     public function create()
     {
+        // Siapkan data untuk dropdown di form
         $karyawans = Karyawan::orderBy('nama_karyawan')->get();
         $jadwalKerjas = JadwalKerja::all();
         $mesinAbsensis = MesinAbsensi::where('status_aktif', 1)->get();
@@ -35,10 +37,11 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Menyimpan data absensi baru ke database
      */
     public function store(Request $request)
     {
+        // Validasi input dari form
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
             'tanggal' => 'required|date',
@@ -55,40 +58,47 @@ class AbsensiController extends Controller
             'keterangan' => 'nullable|string',
         ]);
 
-        // Calculate total hours if both check-in and check-out times are present
+        // Hitung total jam kerja jika ada jam masuk dan jam pulang
         $totalJam = null;
         if ($request->jam_masuk && $request->jam_pulang) {
+            // Konversi string jam ke objek Carbon
             $masuk = \Carbon\Carbon::createFromFormat('H:i', $request->jam_masuk);
             $pulang = \Carbon\Carbon::createFromFormat('H:i', $request->jam_pulang);
 
+            // Jika jam pulang lebih kecil dari jam masuk, berarti shift malam
             if ($pulang->lt($masuk)) {
-                $pulang->addDay(); // Handle overnight shifts
+                $pulang->addDay(); // Tambah 1 hari untuk shift yang melewati tengah malam
             }
 
+            // Hitung selisih waktu dalam format yang mudah dibaca
             $totalJam = $pulang->diffForHumans($masuk, true);
             $request->merge(['total_jam' => $totalJam]);
         }
 
+        // Simpan data absensi ke database
         Absensi::create($request->all());
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('absensis.index')
             ->with('success', 'Absensi berhasil ditambahkan');
     }
 
     /**
-     * Display the specified resource.
+     * Menampilkan detail absensi tertentu
      */
     public function show(Absensi $absensi)
     {
+        // Muat relasi yang dibutuhkan untuk detail absensi
         $absensi->load(['karyawan', 'jadwalKerja', 'mesinAbsensiMasuk', 'mesinAbsensiPulang']);
         return view('admin.absensis.show', compact('absensi'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Menampilkan form untuk mengedit absensi
      */
     public function edit(Absensi $absensi)
     {
+        // Siapkan data untuk dropdown di form edit
         $karyawans = Karyawan::orderBy('nama_karyawan')->get();
         $jadwalKerjas = JadwalKerja::all();
         $mesinAbsensis = MesinAbsensi::where('status_aktif', 1)->get();
@@ -99,10 +109,11 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Memperbarui data absensi di database
      */
     public function update(Request $request, Absensi $absensi)
     {
+        // Validasi input dari form edit
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
             'tanggal' => 'required|date',
@@ -119,33 +130,70 @@ class AbsensiController extends Controller
             'keterangan' => 'nullable|string',
         ]);
 
-        // Calculate total hours if both check-in and check-out times are present
+        // Hitung total jam kerja jika ada jam masuk dan jam pulang
         $totalJam = null;
         if ($request->jam_masuk && $request->jam_pulang) {
+            // Konversi string jam ke objek Carbon
             $masuk = \Carbon\Carbon::createFromFormat('H:i', $request->jam_masuk);
             $pulang = \Carbon\Carbon::createFromFormat('H:i', $request->jam_pulang);
 
+            // Jika jam pulang lebih kecil dari jam masuk, berarti shift malam
             if ($pulang->lt($masuk)) {
-                $pulang->addDay(); // Handle overnight shifts
+                $pulang->addDay(); // Tambah 1 hari untuk shift yang melewati tengah malam
             }
 
+            // Hitung selisih waktu dalam format yang mudah dibaca
             $totalJam = $pulang->diffForHumans($masuk, true);
             $request->merge(['total_jam' => $totalJam]);
         }
 
+        // Update data absensi di database
         $absensi->update($request->all());
 
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('absensis.index')
             ->with('success', 'Absensi berhasil diupdate');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Menghapus data absensi dari database
      */
     public function destroy(Absensi $absensi)
     {
+        // Hapus data absensi
         $absensi->delete();
+
+        // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('absensis.index')
             ->with('success', 'Absensi berhasil dihapus');
+    }
+
+    /**
+     * Check if an employee has a work schedule for the given date.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkSchedule(Request $request)
+    {
+        $karyawanId = $request->input('karyawan_id');
+        $tanggal = $request->input('tanggal');
+
+        // Check if the employee has a schedule for this date
+        // This query will need to be adjusted based on your database structure
+        $jadwal = Jadwalkerja::where('karyawan_id', $karyawanId)
+            ->where('tanggal', $tanggal)
+            ->first();
+
+        if ($jadwal) {
+            return response()->json([
+                'has_schedule' => true,
+                'jadwal_id' => $jadwal->jadwalkerja_id
+            ]);
+        }
+
+        return response()->json([
+            'has_schedule' => false
+        ]);
     }
 }
