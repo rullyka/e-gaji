@@ -54,7 +54,7 @@
                     </a>
                     <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Borong">
                         <i class="mr-2 fas fa-briefcase text-warning"></i> Borong
-                        <span class="float-right badge badge-warning">{{ $karyawans->where('statuskaryawan', 'Borong')->count() }}</span>
+                        <span class="float-right badge badge-warning">{{ $karyawans->where('statuskaryawan', 'Borongan')->count() }}</span>
                     </a>
                     <a href="#" class="list-group-item list-group-item-action filter-category" data-filter="Resign">
                         <i class="mr-2 fas fa-user-slash text-danger"></i> Resign
@@ -117,7 +117,7 @@
                                 $karyawan->tahun_keluar ? 'danger' :
                                 ($karyawan->statuskaryawan == 'Bulanan' ? 'info' :
                                 ($karyawan->statuskaryawan == 'Harian' ? 'success' :
-                                ($karyawan->statuskaryawan == 'Borong' ? 'warning' : 'secondary')))
+                                ($karyawan->statuskaryawan == 'Borongan' ? 'warning' : 'secondary')))
                             }}">
                                 {{ $karyawan->tahun_keluar ? 'Resign' : $karyawan->statuskaryawan }}
                             </span>

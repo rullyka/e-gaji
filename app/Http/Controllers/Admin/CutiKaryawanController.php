@@ -192,15 +192,26 @@ class CutiKaryawanController extends Controller
             'keterangan_tolak' => 'required_if:status_acc,Ditolak',
             'cuti_disetujui' => 'required_if:status_acc,Disetujui',
         ]);
-
+    
+        // Get the authenticated user's karyawan record
+        $karyawanId = null;
+        $user = Auth::user();
+        if ($user) {
+            // Find the karyawan record associated with the authenticated user
+            $karyawan = Karyawan::where('user_id', $user->id)->first();
+            if ($karyawan) {
+                $karyawanId = $karyawan->id;
+            }
+        }
+    
         // Update detail persetujuan
         $cutiKaryawan->status_acc = $request->status_acc;
         $cutiKaryawan->keterangan_tolak = $request->status_acc == 'Ditolak' ? $request->keterangan_tolak : null;
         $cutiKaryawan->cuti_disetujui = $request->status_acc == 'Disetujui' ? $request->cuti_disetujui : null;
         $cutiKaryawan->tanggal_approval = now();
-        $cutiKaryawan->approved_by = Auth::id();
+        $cutiKaryawan->approved_by = $karyawanId; // Use the karyawan ID instead of user ID
         $cutiKaryawan->save();
-
+    
         // Redirect ke halaman index dengan pesan sukses
         return redirect()->route('cuti_karyawans.index')
             ->with('success', 'Pengajuan Cuti berhasil ' . strtolower($request->status_acc));

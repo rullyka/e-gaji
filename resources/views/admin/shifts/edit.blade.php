@@ -83,6 +83,9 @@
                 <div class="alert alert-info">
                     <strong>Durasi Shift:</strong> <span id="duration-display">{{ $shift->duration }}</span>
                 </div>
+                <div id="duration-warning" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle"></i> Durasi shift harus tepat 8 jam.
+                </div>
             </div>
 
             <div class="form-group">
@@ -134,9 +137,37 @@
 
                 // Display the duration
                 $('#duration-display').text(durationText);
+
+                // Check if duration is exactly 8 hours
+                if (durationMinutes !== 480) { // 8 hours = 480 minutes
+                    $('#duration-display').closest('.alert').removeClass('alert-info').addClass('alert-danger');
+                    $('#duration-warning').show();
+                    $('button[type="submit"]').prop('disabled', true);
+
+                    // Alert and offer auto-correction
+                    alert('Perhatian: Durasi shift harus tepat 8 jam. Durasi saat ini: ' + durationText);
+
+                    // Optionally, suggest a correction
+                    if (confirm('Apakah Anda ingin menyesuaikan jam pulang untuk durasi 8 jam?')) {
+                        // Calculate new end time (8 hours from start)
+                        var newEndDate = new Date(startDate.getTime() + (8 * 60 * 60 * 1000));
+                        var newHours = newEndDate.getHours().toString().padStart(2, '0');
+                        var newMinutes = newEndDate.getMinutes().toString().padStart(2, '0');
+                        $('#jam_pulang').val(newHours + ':' + newMinutes);
+
+                        // Recalculate after adjustment
+                        calculateDuration();
+                    }
+                } else {
+                    $('#duration-display').closest('.alert').removeClass('alert-danger').addClass('alert-info');
+                    $('#duration-warning').hide();
+                    $('button[type="submit"]').prop('disabled', false);
+                }
             }
         }
-    });
 
+        // Run calculation on page load
+        calculateDuration();
+    });
 </script>
 @stop

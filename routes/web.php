@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\PeriodeGajiController;
 use App\Http\Controllers\Admin\CutiKaryawanController;
 use App\Http\Controllers\Admin\MesinAbsensiController;
 use App\Http\Controllers\Admin\ProgramStudiController;
+use App\Http\Controllers\Admin\KuotaCutiTahunanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -229,12 +230,24 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // Master Cuti
     Route::resource('mastercutis', MastercutiController::class);
 
+
+    // Kuota Cuti Tahunan Routes
+    Route::get('kuota-cuti', [KuotaCutiTahunanController::class, 'index'])->name('kuota-cuti.index');
+    Route::get('kuota-cuti/report', [KuotaCutiTahunanController::class, 'report'])->name('kuota-cuti.report');
+    Route::get('kuota-cuti/create', [KuotaCutiTahunanController::class, 'create'])->name('kuota-cuti.create');
+    Route::post('kuota-cuti', [KuotaCutiTahunanController::class, 'store'])->name('kuota-cuti.store');
+    Route::get('kuota-cuti/{id}/edit', [KuotaCutiTahunanController::class, 'edit'])->name('kuota-cuti.edit');
+    Route::put('kuota-cuti/{id}', [KuotaCutiTahunanController::class, 'update'])->name('kuota-cuti.update');
+    Route::delete('kuota-cuti/{id}', [KuotaCutiTahunanController::class, 'destroy'])->name('kuota-cuti.destroy');
+    // Add this route with your other kuota-cuti routes
+    Route::post('kuota-cuti/generate-massal', [KuotaCutiTahunanController::class, 'generateMassal'])->name('kuota-cuti.generate-massal');
+
     // Cuti Karyawan
     Route::resource('cuti_karyawans', CutiKaryawanController::class);
-
-    Route::get('cuti_karyawans/{cuti_karyawan}/approval', 'Admin\CutiKaryawanController@approval')->name('cuti_karyawans.approval');
-    // Or if you're using Laravel 8+ syntax:
-    // Route::get('cuti_karyawans/{cuti_karyawan}/approval', [App\Http\Controllers\Admin\CutiKaryawanController::class, 'approval'])->name('cuti_karyawans.approval');
+    // CutiKaryawan Routes
+    Route::resource('cuti_karyawans', CutiKaryawanController::class);
+    Route::get('cuti_karyawans/{cutiKaryawan}/approval', [CutiKaryawanController::class, 'approvalForm'])->name('cuti_karyawans.approval');
+    Route::post('cuti_karyawans/{cutiKaryawan}/approve', [CutiKaryawanController::class, 'approve'])->name('cuti_karyawans.approve');
 
     // Lembur
     Route::resource('lemburs', LemburController::class);
@@ -251,6 +264,18 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::resource('absensis', AbsensiController::class);
     // Add this route with your other absensi routes
     Route::get('/absensis/check-schedule', [AbsensiController::class, 'checkSchedule'])->name('absensis.check-schedule');
+
+    // Penambahan route untuk integrasi mesin absensi
+    Route::get('/absensis/fetch', [AbsensiController::class, 'showFetchForm'])
+        ->name('absensis.fetch.form');
+    Route::post('/absensis/fetch', [AbsensiController::class, 'fetchData'])
+        ->name('absensis.fetch.process');
+    Route::get('/absensis/sync', [AbsensiController::class, 'startSync'])
+        ->name('absensis.sync');
+    Route::get('/absensis/report/daily', [AbsensiController::class, 'dailyReport'])
+        ->name('absensis.report.daily');
+    Route::get('/absensis/report/employee', [AbsensiController::class, 'employeeReport'])
+        ->name('absensis.report.employee');
 
     // Mesin Absensi
     Route::resource('mesinabsensis', MesinAbsensiController::class);

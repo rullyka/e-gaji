@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\AjuanCuti;
 use App\Enums\KaryawanStatusEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -183,5 +184,49 @@ class Karyawan extends Model
         return $this->upload_ktp
             ? asset("storage/karyawan/ktp/{$this->upload_ktp}")
             : null;
+    }
+
+    public function ajuanCuti()
+    {
+        return $this->hasMany(AjuanCuti::class)->with('kuotaCutiTahunan');
+    }
+
+    public function kuotaCutiTahunan()
+    {
+        return $this->hasMany(KuotaCutiTahunan::class);
+    }
+
+    public function getCurrentYearQuota()
+    {
+        return $this->kuotaCutiTahunan()
+            ->where('tahun', now()->year)
+            ->firstOrCreate(
+                ['tahun' => now()->year],
+                ['kuota_awal' => 12, 'kuota_sisa' => 12]
+            );
+    }
+
+    public function reduceQuota(int $days)
+    {
+        $quota = $this->getCurrentYearQuota();
+
+        if ($quota->kuota_sisa < $days) {
+            throw new \Exception('Kuota cuti tidak mencukupi');
+        }
+
+        $quota->update([
+            'kuota_digunakan' => $quota->kuota_digunakan + $days,
+            'kuota_sisa' => $quota->kuota_sisa - $days
+        ]);
+    }
+
+    public function restoreQuota(int $days)
+    {
+        $quota = $this->getCurrentYearQuota();
+
+        $quota->update([
+            'kuota_digunakan' => max($quota->kuota_digunakan - $days, 0),
+            'kuota_sisa' => min($quota->kuota_sisa + $days, 12)
+        ]);
     }
 }

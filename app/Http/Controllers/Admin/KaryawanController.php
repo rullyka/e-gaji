@@ -297,7 +297,10 @@ class KaryawanController extends Controller
             'ukuran_celana'       => 'required|string|max:5',
             'ukuran_sepatu'       => 'required|string|max:5',
             'jml_anggotakk'       => 'required|string|max:5',
-            'upload_ktp'          => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'upload_ktp'            => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'nama_bank'             => 'nullable|string|max:100',
+            'nomor_rekening'        => 'nullable|string|max:50',
+            'nama_pemilik_rekening' => 'nullable|string|max:255',
         ];
 
         // Validasi kondisional untuk id_bagian

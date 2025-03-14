@@ -80,13 +80,14 @@ class JabatanController extends Controller
     {
         // Validasi input dari form edit
         $request->validate([
-            'name_jabatan' => 'required|string|max:255|unique:jabatans,name_jabatan,'.$jabatan->id,
-            'gaji_pokok' => 'required|numeric|min:0',
-            'premi' => 'required|numeric|min:0',
-            'tunjangan_jabatan' => 'required|numeric|min:0',
-            'uang_lembur_biasa' => 'required|numeric|min:0',
-            'uang_lembur_libur' => 'required|numeric|min:0',
+            'name_jabatan' => 'nullable|string|max:255|unique:jabatans,name_jabatan,' . $jabatan->id,
+            'gaji_pokok' => 'nullable|numeric|min:0',
+            'premi' => 'nullable|numeric|min:0',
+            'tunjangan_jabatan' => 'nullable|numeric|min:0',
+            'uang_lembur_biasa' => 'nullable|numeric|min:0',
+            'uang_lembur_libur' => 'nullable|numeric|min:0',
         ]);
+
 
         // Bersihkan format nilai uang dan simpan sebagai integer
         $data = $request->all();

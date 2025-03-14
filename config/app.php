@@ -198,6 +198,8 @@ return [
 
         App\Providers\PermissionServiceProvider::class,
 
+        App\Providers\AttendanceServiceProvider::class,
+
     ],
 
     /*

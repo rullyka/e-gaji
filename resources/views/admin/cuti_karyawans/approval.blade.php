@@ -4,9 +4,9 @@
 
 @section('content_header')
 <div class="d-flex justify-content-between align-items-center">
-    <h1><i class="fas fa-calendar-check mr-2 text-primary"></i>Persetujuan Cuti Karyawan</h1>
+    <h1><i class="mr-2 fas fa-calendar-check text-primary"></i>Persetujuan Cuti Karyawan</h1>
     <a href="{{ route('cuti_karyawans.index') }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left mr-1"></i> Kembali
+        <i class="mr-1 fas fa-arrow-left"></i> Kembali
     </a>
 </div>
 @stop
@@ -76,63 +76,75 @@
                 @if($cutiKaryawan->bukti)
                 <a href="{{ asset('storage/cuti/bukti/' . $cutiKaryawan->bukti) }}"
                    class="btn btn-sm btn-info" target="_blank">
-                    <i class="fas fa-file-download mr-1"></i> Lihat Dokumen
+                    <i class="mr-1 fas fa-file-download"></i> Lihat Dokumen
                 </a>
                 @else
-                <a href="{{ asset('storage/cuti_karyawan/dokumen/' . $cuti_karyawan->dokumen_pendukung) }}"
+                <a href="{{ asset('storage/cuti_karyawan/dokumen/' . $cutiKaryawan->dokumen_pendukung) }}"
                    class="btn btn-sm btn-info" target="_blank">
-                    <i class="fas fa-file-download mr-1"></i> Lihat Dokumen
+                    <i class="mr-1 fas fa-file-download"></i> Lihat Dokumen
                 </a>
-            </div>
-        </div>
-        @endif
-
-        <div class="form-group">
-            <label>Status</label>
-            <p class="form-control-static">
-                @if($cuti_karyawan->status == 'pending')
-                <span class="badge badge-warning">Menunggu Persetujuan</span>
-                @elseif($cuti_karyawan->status == 'approved')
-                <span class="badge badge-success">Disetujui</span>
-                @elseif($cuti_karyawan->status == 'rejected')
-                <span class="badge badge-danger">Ditolak</span>
+                </div>
+                </div>
                 @endif
-            </p>
-        </div>
 
-        @if($cuti_karyawan->status == 'pending')
-        <form action="{{ route('cuti_karyawans.update_status', $cuti_karyawan->id) }}" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="form-group">
-                <label for="catatan">Catatan (opsional)</label>
-                <textarea name="catatan" id="catatan" class="form-control" rows="3">{{ old('catatan') }}</textarea>
-            </div>
-            <div class="form-group">
-                <button type="submit" name="status" value="approved" class="btn btn-success mr-2">
-                    <i class="fas fa-check mr-1"></i> Setujui
-                </button>
-                <button type="submit" name="status" value="rejected" class="btn btn-danger">
-                    <i class="fas fa-times mr-1"></i> Tolak
-                </button>
-            </div>
-        </form>
-        @else
-        <div class="form-group">
-            <label>Catatan</label>
-            <p class="form-control-static">{{ $cuti_karyawan->catatan ?? '-' }}</p>
-        </div>
-        <div class="form-group">
-            <label>Disetujui/Ditolak Oleh</label>
-            <p class="form-control-static">{{ $cuti_karyawan->approved_by_user->name ?? '-' }}</p>
-        </div>
-        <div class="form-group">
-            <label>Tanggal Persetujuan</label>
-            <p class="form-control-static">
-                {{ $cuti_karyawan->approved_at ? \Carbon\Carbon::parse($cuti_karyawan->approved_at)->format('d-m-Y H:i') : '-' }}
-            </p>
-        </div>
-        @endif
+                <div class="form-group">
+                    <label>Status</label>
+                    <p class="form-control-static">
+                        @if($cutiKaryawan->status_acc == 'Menunggu Persetujuan')
+                        <span class="badge badge-warning">Menunggu Persetujuan</span>
+                        @elseif($cutiKaryawan->status_acc == 'Disetujui')
+                        <span class="badge badge-success">Disetujui</span>
+                        @elseif($cutiKaryawan->status_acc == 'Ditolak')
+                        <span class="badge badge-danger">Ditolak</span>
+                        @endif
+                    </p>
+                </div>
+
+                @if($cutiKaryawan->status_acc == 'Menunggu Persetujuan')
+                <form action="{{ route('cuti_karyawans.approve', $cutiKaryawan->id) }}" method="POST">
+                    @csrf
+                    <div class="form-group">
+                        <label for="status_acc">Status Persetujuan</label>
+                        <select name="status_acc" id="status_acc" class="form-control" required>
+                            <option value="">-- Pilih Status --</option>
+                            <option value="Disetujui">Disetujui</option>
+                            <option value="Ditolak">Ditolak</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="cuti_disetujui_group">
+                        <label for="cuti_disetujui">Jumlah Hari Disetujui</label>
+                        <input type="number" name="cuti_disetujui" id="cuti_disetujui" class="form-control"
+                               min="1" max="{{ $cutiKaryawan->jumlah_hari_cuti }}" value="{{ $cutiKaryawan->jumlah_hari_cuti }}">
+                    </div>
+
+                    <div class="form-group" id="keterangan_tolak_group" style="display: none;">
+                        <label for="keterangan_tolak">Alasan Penolakan</label>
+                        <textarea name="keterangan_tolak" id="keterangan_tolak" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="mr-1 fas fa-save"></i> Simpan Keputusan
+                        </button>
+                    </div>
+                </form>
+                @else
+                <div class="form-group">
+                    <label>Catatan</label>
+                    <p class="form-control-static">{{ $cutiKaryawan->keterangan_tolak ?? '-' }}</p>
+                </div>
+                <div class="form-group">
+                    <label>Disetujui/Ditolak Oleh</label>
+                    <p class="form-control-static">{{ $cutiKaryawan->approver->nama_karyawan ?? '-' }}</p>
+                </div>
+                <div class="form-group">
+                    <label>Tanggal Persetujuan</label>
+                    <p class="form-control-static">
+                        {{ $cutiKaryawan->tanggal_approval ? \Carbon\Carbon::parse($cutiKaryawan->tanggal_approval)->format('d-m-Y H:i') : '-' }}
+                    </p>
+                </div>
+                @endif
     </div>
 </div>
 @stop
@@ -151,6 +163,33 @@
         padding: 0.4em 0.6em;
     }
 </style>
+@stop
+
+@section('js')
+<script>
+    $(document).ready(function() {
+        // Toggle fields based on approval status
+        $('#status_acc').change(function() {
+            if ($(this).val() == 'Disetujui') {
+                $('#cuti_disetujui_group').show();
+                $('#keterangan_tolak_group').hide();
+                $('#keterangan_tolak').removeAttr('required');
+                $('#cuti_disetujui').attr('required', 'required');
+            } else if ($(this).val() == 'Ditolak') {
+                $('#cuti_disetujui_group').hide();
+                $('#keterangan_tolak_group').show();
+                $('#cuti_disetujui').removeAttr('required');
+                $('#keterangan_tolak').attr('required', 'required');
+            } else {
+                $('#cuti_disetujui_group').hide();
+                $('#keterangan_tolak_group').hide();
+            }
+        });
+
+        // Trigger the change event on page load to set initial state
+        $('#status_acc').trigger('change');
+    });
+</script>
 @stop
 
 @section('js')

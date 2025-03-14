@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AbsensiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,4 +17,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// API untuk absensi realtime
+Route::prefix('absensi')->group(function () {
+    Route::get('/fetch-latest', [AbsensiController::class, 'fetchLatestData']);
+    Route::get('/today', [AbsensiController::class, 'getTodayAttendance']);
+    Route::get('/summary', [AbsensiController::class, 'getTodaySummary']);
 });

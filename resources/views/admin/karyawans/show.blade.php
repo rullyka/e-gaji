@@ -57,6 +57,18 @@
                                 <td>{{ $karyawan->statuskaryawan }}</td>
                             </tr>
                             <tr>
+                                <th>Nomor Rekening</th>
+                                <td>{{ $karyawan->nomor_rekening }}</td>
+                            </tr>
+                            <tr>
+                                <th>Nama Bank</th>
+                                <td>{{ $karyawan->nama_bank }}</td>
+                            </tr>
+                            <tr>
+                                <th>Nama Pemilik Rekening</th>
+                                <td>{{ $karyawan->nama_pemilik_rekening }}</td>
+                            </tr>
+                            <tr>
                                 <th>Tanggal Masuk</th>
                                 <td>{{ $karyawan->tgl_awalmmasuk ? date('d-m-Y', strtotime($karyawan->tgl_awalmmasuk)) : '-' }}</td>
                             </tr>
@@ -162,7 +174,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .resign-watermark {
         position: absolute;
         top: 50%;
