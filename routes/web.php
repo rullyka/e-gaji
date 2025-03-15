@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\ProgramStudi;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MenuController;
@@ -54,6 +56,22 @@ Route::get('/karyawans/get-all-active', [KaryawanController::class, 'getAllActiv
 Route::get('karyawans/search', [KaryawanController::class, 'search'])
     ->name('karyawans.search');
 Route::get('shifts/getNextCode', [ShiftController::class, 'getNextCode'])->name('shifts.getNextCode');
+Route::get('/get-program-studi', function (Request $request) {
+    $educationType = $request->query('education_type');
+
+    // Debugging
+    if (!$educationType) {
+        return response()->json(['error' => 'education_type tidak ditemukan'], 400);
+    }
+
+    $programStudi = ProgramStudi::where('education_type', $educationType)->get(['id', 'name_programstudi']);
+
+    if ($programStudi->isEmpty()) {
+        return response()->json(['message' => 'Data tidak ditemukan'], 404);
+    }
+
+    return response()->json($programStudi, 200, [], JSON_NUMERIC_CHECK);
+});
 
 //------------------------------------------------------------------
 // Protected Routes (Auth Required)
@@ -345,8 +363,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         ->name('penggajian.getFilteredKaryawans');
     Route::post('penggajian/batch-process', [PenggajianController::class, 'batchProcess'])
         ->name('penggajian.batchProcess');
-    Route::get('penggajian/{penggajian}/payslip', [PenggajianController::class, 'generatePayslip'])
-        ->name('penggajian.payslip');
+
     Route::post('penggajian/{penggajian}/add-component', [PenggajianController::class, 'addComponent'])
         ->name('penggajian.addComponent');
     Route::delete('penggajian/{penggajian}/remove-component', [PenggajianController::class, 'removeComponent'])
@@ -365,9 +382,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
         ->name('penggajian.exportExcel');
 
     // Payslip routes - add these to your admin group routes
+    // Payslip routes for period and individual payslips
     Route::get('/penggajian/periode/{periodeId}/payslips', [PenggajianController::class, 'generatePayslips'])
         ->name('penggajian.payslips');
-    Route::get('/penggajian/{penggajian}/payslip', [PenggajianController::class, 'generatePayslip'])
+
+    Route::get('/penggajian/{id}/payslip', [PenggajianController::class, 'generatePayslip'])
         ->name('penggajian.payslip');
 });
 

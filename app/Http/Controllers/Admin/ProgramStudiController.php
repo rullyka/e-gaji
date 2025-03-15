@@ -23,6 +23,7 @@ class ProgramStudiController extends Controller
     {
         $request->validate([
             'name_programstudi' => 'required|string|max:255|unique:program_studis,name_programstudi',
+            'education_type' => 'required|in:SMA,non-SMA',
         ]);
 
         ProgramStudi::create($request->all());
@@ -46,7 +47,8 @@ class ProgramStudiController extends Controller
     public function update(Request $request, ProgramStudi $programStudi)
     {
         $request->validate([
-            'name_programstudi' => 'required|string|max:255|unique:program_studis,name_programstudi,'.$programStudi->id,
+            'name_programstudi' => 'required|string|max:255|unique:program_studis,name_programstudi,' . $programStudi->id,
+            'education_type' => 'required|in:SMA,non-SMA',
         ]);
 
         $programStudi->update($request->all());

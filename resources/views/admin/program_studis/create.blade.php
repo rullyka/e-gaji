@@ -28,6 +28,21 @@
                 </div>
                 @enderror
             </div>
+            
+            <div class="form-group">
+                <label for="education_type">Jenis Pendidikan</label>
+                <select class="form-control @error('education_type') is-invalid @enderror" id="education_type" name="education_type" required>
+                    <option value="">-- Pilih Jenis Pendidikan --</option>
+                    <option value="SMA" {{ old('education_type') == 'SMA' ? 'selected' : '' }}>SMA</option>
+                    <option value="non-SMA" {{ old('education_type') == 'non-SMA' ? 'selected' : '' }}>non-SMA</option>
+                </select>
+                @error('education_type')
+                <div class="invalid-feedback">
+                    {{ $message }}
+                </div>
+                @enderror
+            </div>
+            
             <div class="form-group">
                 <a href="{{ route('program_studis.index') }}" class="btn btn-secondary">Cancel</a>
                 <button type="submit" class="btn btn-primary">Submit</button>

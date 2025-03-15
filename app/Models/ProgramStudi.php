@@ -10,8 +10,8 @@ class ProgramStudi extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = [
-        'name_programstudi',
+    protected $guarded = [
+        'id',
     ];
 
     /**

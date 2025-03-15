@@ -31,9 +31,9 @@
             @method('PUT')
 
             <div class="form-group">
-                <label for="id_departemen">Departemen</label>
+                <label for="id_departemen">Departemen <span class="text-danger">*</span></label>
                 <select class="form-control select2 @error('id_departemen') is-invalid @enderror" id="id_departemen" name="id_departemen" required>
-                    <option value="">-- Select Departemen --</option>
+                    <option value="">-- Pilih Departemen --</option>
                     @foreach($departemens as $departemen)
                     <option value="{{ $departemen->id }}" {{ old('id_departemen', $bagian->id_departemen) == $departemen->id ? 'selected' : '' }}>
                         {{ $departemen->name_departemen }}
@@ -57,9 +57,13 @@
                 @enderror
             </div>
 
-            <div class="text-right form-group">
-                <button type="reset" class="btn btn-secondary">Reset</button>
-                <button type="submit" class="btn btn-primary">Update</button>
+            <div class="form-group text-right">
+                <a href="{{ route('bagians.index') }}" class="btn btn-secondary mr-2">
+                    <i class="fas fa-times"></i> Batal
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Simpan Perubahan
+                </button>
             </div>
         </form>
     </div>
@@ -76,9 +80,10 @@
 <script>
     $(function() {
         $('.select2').select2({
-            theme: 'bootstrap4'
+            theme: 'bootstrap4',
+            placeholder: "-- Pilih Departemen --",
+            allowClear: true
         });
     });
-
 </script>
 @stop

@@ -285,14 +285,12 @@
 
                                 <div class="form-group" id="programstudi_group">
                                     <label for="id_programstudi">Prodi / Jurusan</label>
-                                    <select class="form-control select2 @error('id_programstudi') is-invalid @enderror" id="id_programstudi" name="id_programstudi">
-                                        <option value="">-- Pilih Prodi / Jurusan --</option>
-                                        @foreach($programStudis as $programStudi)
-                                        <option value="{{ $programStudi->id }}" {{ old('id_programstudi', $karyawan->id_programstudi) == $programStudi->id ? 'selected' : '' }}>
-                                            {{ $programStudi->name_programstudi }}
-                                        </option>
-                                        @endforeach
-                                    </select>
+                                    <select class="form-control select2 @error('id_programstudi') is-invalid @enderror"
+    id="id_programstudi"
+    name="id_programstudi"
+    data-selected="{{ $karyawan->id_programstudi }}">
+    <option value="">-- Pilih Prodi / Jurusan --</option>
+</select>
                                     @error('id_programstudi')
                                     <div class="invalid-feedback">
                                         {{ $message }}
@@ -751,13 +749,13 @@
                             'NIK harus terdiri dari 16 digit.</div>').insertAfter('#nik');
                     }
                     valid = false;
-                    
+
                 } else {
                     $('#nik-length-error').remove();
                     $('#nik').removeClass('is-invalid');
                 }
             }
-            
+
             if (kkValue) {
                 if (kkValue.length !== 16) {
                     $('#kk').addClass('is-invalid');
@@ -789,7 +787,7 @@
                 // Hapus pesan error jika ada
                 $('#nik-kk-error').remove();
             }
-            
+
             return valid;
         }
 
@@ -806,7 +804,7 @@
             // Validasi panjang saat input
             var fieldId = this.id;
             var errorId = fieldId + '-length-error';
-            
+
             if (this.value.length > 0 && this.value.length !== 16) {
                 $(this).addClass('is-invalid');
                 if (!$('#' + errorId).length) {
@@ -825,23 +823,77 @@
         });
 
         // Handle pendidikan_terakhir change to show/hide program studi
-        $('#pendidikan_terakhir').on('change', function() {
-            var pendidikan = $(this).val();
-            var programStudiGroup = $('#programstudi_group');
+        function updateProgramStudiDropdown(pendidikanTerakhir, selectedProgram = null) {
+    var programStudiGroup = $('#programstudi_group');
+    var programStudiDropdown = $('#id_programstudi');
 
-            // Show program studi field only for education levels higher than SMP
-            if (pendidikan && pendidikan !== 'SD/MI' && pendidikan !== 'SMP/MTS') {
-                programStudiGroup.show();
-                // Make it required for higher education
-                $('#id_programstudi').attr('required', true);
-                // Update label to show it's required
-                programStudiGroup.find('label').html('Prodi / Jurusan <span class="text-danger">*</span>');
-            } else {
-                programStudiGroup.hide();
-                $('#id_programstudi').attr('required', false);
-                $('#id_programstudi').val('').trigger('change');
+    // Selalu kosongkan dropdown sebelum menambahkan opsi baru
+    programStudiDropdown.empty().append('<option value="">-- Pilih Prodi / Jurusan --</option>');
+
+    console.log("Pendidikan Terakhir:", pendidikanTerakhir);
+    console.log("Selected Program:", selectedProgram);
+
+    if (pendidikanTerakhir && pendidikanTerakhir !== 'SD/MI' && pendidikanTerakhir !== 'SMP/MTS') {
+        programStudiGroup.show();
+        programStudiDropdown.attr('required', true);
+        programStudiGroup.find('label').html('Prodi / Jurusan <span class="text-danger">*</span>');
+
+        let educationType = (pendidikanTerakhir === 'SMA/SMK/MA') ? 'SMA' : 'non-SMA';
+        console.log("Education Type:", educationType);
+
+        // Panggil AJAX untuk mendapatkan daftar program studi
+        $.ajax({
+            url: '/get-program-studi',
+            type: 'GET',
+            data: { education_type: educationType },
+            success: function (data) {
+                console.log("Loaded Options:", data);
+
+                // Jika data kosong, tambahkan opsi default
+                if (data.length === 0) {
+                    programStudiDropdown.append('<option value="">Tidak ada program studi tersedia</option>');
+                } else {
+                    // Tambahkan opsi program studi dari server
+                    $.each(data, function (index, item) {
+                        let isSelected = selectedProgram && selectedProgram == item.id ? 'selected' : '';
+                        programStudiDropdown.append(`<option value="${item.id}" ${isSelected}>${item.name_programstudi}</option>`);
+                    });
+
+                    // Set nilai dari database HANYA jika ini adalah pemuatan awal (saat selectedProgram ada)
+                    if (selectedProgram) {
+                        setTimeout(() => {
+                            programStudiDropdown.val(selectedProgram).trigger('change');
+                        }, 300);
+                    }
+                }
+            },
+            error: function (xhr, status, error) {
+                console.log("AJAX Error:", status, error);
             }
         });
+    } else {
+        programStudiGroup.hide();
+        programStudiDropdown.attr('required', false);
+        programStudiDropdown.val('').trigger('change');
+    }
+}
+
+// Jalankan hanya sekali saat halaman dimuat untuk nilai awal
+$(document).ready(function() {
+    let pendidikanTerakhir = $('#pendidikan_terakhir').val();
+    let selectedProgram = $('#id_programstudi').attr('data-selected');
+
+    console.log("Initial loading - Pendidikan:", pendidikanTerakhir);
+    console.log("Initial loading - Program Studi:", selectedProgram);
+
+    // Hanya panggil dengan selectedProgram saat pertama kali
+    updateProgramStudiDropdown(pendidikanTerakhir, selectedProgram);
+
+    // Saat user mengubah pendidikan terakhir, panggil tanpa selectedProgram
+    $('#pendidikan_terakhir').on('change', function() {
+        updateProgramStudiDropdown($(this).val()); // Tanpa parameter kedua
+    });
+});
 
         // Initialize SmartWizard
         $('#smartwizard').smartWizard({
@@ -883,7 +935,7 @@
                 previous: 'Sebelumnya'
             }
         });
-        
+
 
         // Enhance step navigation with validation
         $('#smartwizard').on('leaveStep', function(e, anchorObject, currentStepIndex, nextStepIndex, stepDirection) {
@@ -1009,13 +1061,13 @@
             // Check NIK and KK length
             var nikValue = $('#nik').val();
             var kkValue = $('#kk').val();
-            
+
             if (nikValue && nikValue.length !== 16) {
                 $('#smartwizard').smartWizard("goToStep", 2); // Go to step 3
                 alert('NIK harus terdiri dari 16 digit.');
                 return false;
             }
-            
+
             if (kkValue && kkValue.length !== 16) {
                 $('#smartwizard').smartWizard("goToStep", 2); // Go to step 3
                 alert('Nomor KK harus terdiri dari 16 digit.');
@@ -1086,7 +1138,7 @@
 
         // Run departemen change on page load to set initial state
         departemenSelect.trigger('change');
-        
+
         // Run pendidikan_terakhir change on page load to set initial state
         $('#pendidikan_terakhir').trigger('change');
     });

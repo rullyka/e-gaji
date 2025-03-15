@@ -209,9 +209,9 @@
         $slipCount++;
 
         // Prepare potongan and tunjangan
-        $detailTunjangan = json_decode($penggajian->detail_tunjangan, true) ?? [];
-        $detailPotongan = json_decode($penggajian->detail_potongan, true) ?? [];
-        $detailDepartemen = json_decode($penggajian->detail_departemen, true) ?? [];
+        $detailTunjangan = is_array($penggajian->detail_tunjangan) ? $penggajian->detail_tunjangan : [];
+        $detailPotongan = is_array($penggajian->detail_potongan) ? $penggajian->detail_potongan : [];
+        $detailDepartemen = is_array($penggajian->detail_departemen) ? $penggajian->detail_departemen : [];
 
         // Get tunjangan from jabatan and profesi if available
         $tunjanganJabatan = isset($penggajian->karyawan->jabatan) ? $penggajian->karyawan->jabatan->tunjangan_jabatan : 0;
@@ -242,11 +242,31 @@
         $standarPendapatan['Tunjangan Profesi'] = $tunjanganProfesi;
         }
 
+        // Convert detail tunjangan to associative array if it's array of objects
+        $detailTunjanganAssoc = [];
+        if (!empty($detailTunjangan)) {
+        foreach ($detailTunjangan as $item) {
+        if (is_array($item) && isset($item['nama']) && isset($item['nominal'])) {
+        $detailTunjanganAssoc[$item['nama']] = $item['nominal'];
+        }
+        }
+        }
+
+        // Convert detail potongan to associative array if it's array of objects
+        $detailPotonganAssoc = [];
+        if (!empty($detailPotongan)) {
+        foreach ($detailPotongan as $item) {
+        if (is_array($item) && isset($item['nama']) && isset($item['nominal'])) {
+        $detailPotonganAssoc[$item['nama']] = $item['nominal'];
+        }
+        }
+        }
+
         // Merge with detail tunjangan
-        $pendapatanItems = array_merge($standarPendapatan, $detailTunjangan);
+        $pendapatanItems = array_merge($standarPendapatan, $detailTunjanganAssoc);
 
         // Merge with detail potongan
-        $potonganItems = array_merge($standarPotongan, $detailPotongan);
+        $potonganItems = array_merge($standarPotongan, $detailPotonganAssoc);
 
         // Maximum rows for display
         $maxRows = max(count($pendapatanItems), count($potonganItems));
@@ -273,11 +293,11 @@
                     <div class="info-column">
                         <div class="info-row">
                             <div class="info-label">Nama</div>
-                            <div class="info-value">: {{ $penggajian->karyawan->nama_karyawan }}</div>
+                            <div class="info-value">: {{ $penggajian->karyawan->nama_karyawan ?? '-' }}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">NIK</div>
-                            <div class="info-value">: {{ $penggajian->karyawan->nik_karyawan }}</div>
+                            <div class="info-value">: {{ $penggajian->karyawan->nik ?? '-' }}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Departemen</div>
@@ -292,15 +312,15 @@
                     <div class="info-column">
                         <div class="info-row">
                             <div class="info-label">Periode</div>
-                            <div class="info-value">: {{ \Carbon\Carbon::parse($penggajian->periode_awal)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($penggajian->periode_akhir)->format('d/m/Y') }}</div>
+                            <div class="info-value">: {{ isset($penggajian->periode_awal) ? \Carbon\Carbon::parse($penggajian->periode_awal)->format('d/m/Y') : '-' }} - {{ isset($penggajian->periode_akhir) ? \Carbon\Carbon::parse($penggajian->periode_akhir)->format('d/m/Y') : '-' }}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Nama Periode</div>
-                            <div class="info-value">: {{ $penggajian->periode->nama_periode ?? '-' }}</div>
+                            <div class="info-value">: {{ $penggajian->periodeGaji->nama_periode ?? '-' }}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Status</div>
-                            <div class="info-value">: {{ $penggajian->karyawan->statuskaryawan }}</div>
+                            <div class="info-value">: {{ $penggajian->karyawan->statuskaryawan ?? '-' }}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Tgl. Cetak</div>

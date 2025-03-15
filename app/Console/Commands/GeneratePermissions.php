@@ -12,28 +12,28 @@ use ReflectionMethod;
 class GeneratePermissions extends Command
 {
     /**
-     * The name and signature of the console command.
+     * Nama dan signature dari perintah console.
      *
      * @var string
      */
     protected $signature = 'permissions:generate {controller? : Specific controller to generate permissions for}';
 
     /**
-     * The console command description.
+     * Deskripsi perintah console.
      *
      * @var string
      */
     protected $description = 'Generate permissions based on controller methods';
 
     /**
-     * The permission service.
+     * Layanan permission.
      *
      * @var PermissionService
      */
     protected $permissionService;
 
     /**
-     * Create a new command instance.
+     * Membuat instance perintah baru.
      *
      * @return void
      */
@@ -44,7 +44,7 @@ class GeneratePermissions extends Command
     }
 
     /**
-     * Execute the console command.
+     * Menjalankan perintah console.
      *
      * @return int
      */
@@ -68,7 +68,7 @@ class GeneratePermissions extends Command
     }
 
     /**
-     * Generate permissions for all controllers.
+     * Menghasilkan permission untuk semua controller.
      */
     protected function generateAllPermissions()
     {
@@ -92,7 +92,7 @@ class GeneratePermissions extends Command
     }
 
     /**
-     * Get all controller classes.
+     * Mendapatkan semua kelas controller.
      *
      * @return array
      */
@@ -103,7 +103,7 @@ class GeneratePermissions extends Command
             app_path('Http/Controllers'),
             app_path('Http/Controllers/Admin'),
             app_path('Http/Controllers/Auth'),
-            // Add other controller directories as needed
+            // Tambahkan direktori controller lain sesuai kebutuhan
         ];
 
         foreach ($controllerPaths as $path) {
@@ -125,7 +125,7 @@ class GeneratePermissions extends Command
     }
 
     /**
-     * Get class name from file.
+     * Mendapatkan nama kelas dari file.
      *
      * @param \SplFileInfo $file
      * @return string|null
@@ -134,11 +134,11 @@ class GeneratePermissions extends Command
     {
         $content = File::get($file->getPathname());
 
-        // Extract namespace
+        // Ekstrak namespace
         preg_match('/namespace\s+([^;]+)/i', $content, $matches);
         $namespace = $matches[1] ?? null;
 
-        // Extract class name
+        // Ekstrak nama kelas
         preg_match('/class\s+(\w+)/i', $content, $matches);
         $className = $matches[1] ?? null;
 
@@ -150,31 +150,31 @@ class GeneratePermissions extends Command
     }
 
     /**
-     * Resolve controller class from input.
+     * Menyelesaikan kelas controller dari input.
      *
      * @param string $controller
      * @return string|null
      */
     protected function resolveControllerClass($controller)
     {
-        // Check if the input is a fully qualified class name
+        // Periksa apakah input adalah nama kelas yang lengkap
         if (class_exists($controller)) {
             return $controller;
         }
 
-        // Try with App\Http\Controllers prefix
+        // Coba dengan awalan App\Http\Controllers
         $className = 'App\\Http\\Controllers\\' . $controller;
         if (class_exists($className)) {
             return $className;
         }
 
-        // Try with App\Http\Controllers\Admin prefix
+        // Coba dengan awalan App\Http\Controllers\Admin
         $className = 'App\\Http\\Controllers\\Admin\\' . $controller;
         if (class_exists($className)) {
             return $className;
         }
 
-        // If controller doesn't end with "Controller", append it
+        // Jika controller tidak diakhiri dengan "Controller", tambahkan
         if (!Str::endsWith($controller, 'Controller')) {
             return $this->resolveControllerClass($controller . 'Controller');
         }
@@ -183,16 +183,18 @@ class GeneratePermissions extends Command
     }
 
     /**
-     * Generate permissions for a specific controller.
+     * Menghasilkan permission untuk controller tertentu.
      *
      * @param string $controllerClass
      * @return array
      */
     protected function generatePermissionsForController($controllerClass)
     {
-        // Skip the base Controller class and abstract classes
-        if ($controllerClass === 'App\\Http\\Controllers\\Controller' ||
-            (new ReflectionClass($controllerClass))->isAbstract()) {
+        // Lewati kelas Controller dasar dan kelas abstrak
+        if (
+            $controllerClass === 'App\\Http\\Controllers\\Controller' ||
+            (new ReflectionClass($controllerClass))->isAbstract()
+        ) {
             return [];
         }
 

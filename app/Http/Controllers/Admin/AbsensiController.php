@@ -124,63 +124,6 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Membuat absensi otomatis untuk semua karyawan pada hari libur
-     */
-    public function createAbsensiForHoliday($hariLiburId)
-    {
-        $hariLibur = \App\Models\HariLibur::findOrFail($hariLiburId);
-        $karyawans = Karyawan::where('status', 'Aktif')->get();
-        $count = 0;
-
-        foreach ($karyawans as $karyawan) {
-            // Check if attendance already exists for this employee on this date
-            $existingAbsensi = Absensi::where('karyawan_id', $karyawan->id)
-                ->where('tanggal', $hariLibur->tanggal)
-                ->first();
-
-            if (!$existingAbsensi) {
-                // Get default jadwal kerja for the employee
-                $jadwalKerja = JadwalKerja::where('karyawan_id', $karyawan->id)
-                    ->where('tanggal', $hariLibur->tanggal)
-                    ->first();
-
-                if (!$jadwalKerja) {
-                    // If no specific schedule for this date, get the default one
-                    $jadwalKerja = JadwalKerja::where('karyawan_id', $karyawan->id)
-                        ->where('is_default', true)
-                        ->first();
-                }
-
-                if (!$jadwalKerja) {
-                    Log::warning("Tidak ada jadwal kerja untuk karyawan {$karyawan->nama_karyawan}");
-                    continue;
-                }
-
-                // Create attendance record for holiday
-                Absensi::create([
-                    'karyawan_id' => $karyawan->id,
-                    'tanggal' => $hariLibur->tanggal,
-                    'jadwalkerja_id' => $jadwalKerja->id,
-                    'status' => 'Libur',
-                    'keterangan' => 'Hari Libur: ' . $hariLibur->nama_libur,
-                    'jenis_absensi_masuk' => 'Manual',
-                    'jenis_absensi_pulang' => 'Manual',
-                    'jam_masuk' => null,
-                    'jam_pulang' => null,
-                    'keterlambatan' => 0,
-                    'pulang_awal' => 0,
-                    'total_jam' => 0
-                ]);
-
-                $count++;
-            }
-        }
-
-        return redirect()->route('admin.hariliburs.show', $hariLibur)
-            ->with('success', "Berhasil membuat {$count} absensi untuk hari libur ini.");
-    }
-
-    /**
      * Menampilkan detail absensi tertentu
      */
     public function show(Absensi $absensi)
@@ -620,4 +563,70 @@ class AbsensiController extends Controller
 
         return view('admin.absensis.employee-report', compact('karyawan', 'absensi', 'bulan', 'summary'));
     }
+
+    /**
+ * Membuat absensi otomatis untuk semua karyawan pada hari libur
+ *
+ * @param int $hariLiburId
+ * @return int Jumlah record absensi yang dibuat
+ */
+public function createAbsensiForHoliday($hariLiburId)
+{
+    $hariLibur = \App\Models\HariLibur::findOrFail($hariLiburId);
+    $karyawans = Karyawan::whereNull('tahun_keluar')->get();
+    $count = 0;
+
+    foreach ($karyawans as $karyawan) {
+        // Check if attendance already exists for this employee on this date
+        $existingAbsensi = Absensi::where('karyawan_id', $karyawan->id)
+            ->where('tanggal', $hariLibur->tanggal)
+            ->first();
+
+        if (!$existingAbsensi) {
+            // Get default jadwal kerja for the employee
+            $jadwalKerja = JadwalKerja::where('karyawan_id', $karyawan->id)
+                ->where('tanggal', $hariLibur->tanggal)
+                ->first();
+
+            if (!$jadwalKerja) {
+                // If no specific schedule for this date, get the default one
+                $jadwalKerja = JadwalKerja::where('karyawan_id', $karyawan->id)
+                    ->where('is_default', true)
+                    ->first();
+            }
+
+            if (!$jadwalKerja) {
+                Log::warning("Tidak ada jadwal kerja untuk karyawan {$karyawan->nama_karyawan}");
+                continue;
+            }
+
+            // Create attendance record for holiday
+            Absensi::create([
+                'karyawan_id' => $karyawan->id,
+                'tanggal' => $hariLibur->tanggal,
+                'jadwalkerja_id' => $jadwalKerja->id,
+                'status' => 'Libur',
+                'keterangan' => 'Hari Libur: ' . $hariLibur->nama_libur,
+                'jenis_absensi_masuk' => 'Manual',
+                'jenis_absensi_pulang' => 'Manual',
+                'jam_masuk' => null,
+                'jam_pulang' => null,
+                'keterlambatan' => 0,
+                'pulang_awal' => 0,
+                'total_jam' => 0
+            ]);
+
+            $count++;
+        }
+    }
+
+    // Jika dipanggil dari halaman detail, lakukan redirect
+    if (request()->routeIs('admin.hariliburs.show')) {
+        return redirect()->route('admin.hariliburs.show', $hariLibur)
+            ->with('success', "Berhasil membuat {$count} absensi untuk hari libur ini.");
+    }
+
+    // Jika dipanggil dari store(), kembalikan count
+    return $count;
+}
 }

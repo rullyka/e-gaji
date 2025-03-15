@@ -50,6 +50,12 @@ class Penggajian extends Model
         return $this->belongsTo(PeriodeGaji::class, 'id_periode', 'id');
     }
 
+    // Add the 'periode' relationship as an alias to 'periodeGaji'
+    public function periode()
+    {
+        return $this->belongsTo(PeriodeGaji::class, 'id_periode', 'id');
+    }
+
     // Accessor for detail_tunjangan
     public function getDetailTunjanganAttribute($value)
     {

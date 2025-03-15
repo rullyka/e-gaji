@@ -13,28 +13,28 @@ use Illuminate\Support\Facades\Log;
 class FetchAttendanceData extends Command
 {
     /**
-     * The name and signature of the console command.
+     * Nama dan signature dari perintah console.
      *
      * @var string
      */
     protected $signature = 'attendance:fetch';
 
     /**
-     * The console command description.
+     * Deskripsi perintah console.
      *
      * @var string
      */
     protected $description = 'Fetch attendance data from biometric machines';
 
     /**
-     * Execute the console command.
+     * Eksekusi perintah console.
      */
     public function handle()
     {
         $this->info('Fetching attendance data from machines...');
 
         // Mengambil semua mesin absensi yang aktif
-        $machines = Mesinabsensi::where('status', 'aktif')->get();
+        $machines = Mesinabsensi::whereNull('tahun_keluar')->get();
 
         foreach ($machines as $machine) {
             $this->fetchDataFromMachine($machine);
@@ -46,7 +46,7 @@ class FetchAttendanceData extends Command
     }
 
     /**
-     * Fetch data from a specific machine.
+     * Mengambil data dari mesin tertentu.
      *
      * @param \App\Models\Mesinabsensi $machine
      * @return void
@@ -90,7 +90,7 @@ class FetchAttendanceData extends Command
     }
 
     /**
-     * Process the attendance data from the machine.
+     * Memproses data absensi dari mesin.
      *
      * @param string $buffer
      * @param \App\Models\Mesinabsensi $machine
@@ -146,7 +146,7 @@ class FetchAttendanceData extends Command
     }
 
     /**
-     * Process individual employee attendance.
+     * Memproses absensi individu karyawan.
      *
      * @param \App\Models\Karyawan $karyawan
      * @param \App\Models\Jadwalkerja $jadwalKerja
@@ -247,7 +247,7 @@ class FetchAttendanceData extends Command
     }
 
     /**
-     * Parse data from buffer.
+     * Mengurai data dari buffer.
      *
      * @param string $data
      * @param string $start

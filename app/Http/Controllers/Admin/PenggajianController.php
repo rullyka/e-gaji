@@ -21,12 +21,12 @@ use Illuminate\Support\Str;
 class PenggajianController extends Controller
 {
     /**
- * Generate payslip for multiple employees by period
- *
- * @param  int  $periodeId
- * @return \Illuminate\Http\Response
- */
-public function generatePayslips($periodeId)
+     * Generate payslip for multiple employees by period
+     *
+     * @param  int  $periodeId
+     * @return \Illuminate\Http\Response
+     */
+    public function generatePayslips($periodeId)
 {
     // Verify period exists
     $periode = \App\Models\PeriodeGaji::findOrFail($periodeId);
@@ -37,11 +37,11 @@ public function generatePayslips($periodeId)
         'karyawan.bagian',
         'karyawan.jabatan',
         'karyawan.profesi',
-        'periode'
+        'periodeGaji'  // Changed from 'periode' to 'periodeGaji'
     ])
-    ->where('id_periode', $periodeId)
-    ->orderBy('id_karyawan')
-    ->get();
+        ->where('id_periode', $periodeId)
+        ->orderBy('id_karyawan')
+        ->get();
 
     // If no penggajian found for this period
     if ($penggajians->isEmpty()) {
@@ -50,39 +50,55 @@ public function generatePayslips($periodeId)
     }
 
     // Pass to view
-    return view('penggajian.slip', compact('penggajians', 'periode'));
+    return view('admin.penggajians.slip', compact('penggajians', 'periode'));
 }
 
-/**
- * Generate individual payslip for a single employee
- *
- * @param  string  $id
- * @return \Illuminate\Http\Response
- */
-        public function generatePayslip($id)
-        {
-            // Get single penggajian with related data
-            $penggajian = \App\Models\Penggajian::with([
-                'karyawan.departemen',
-                'karyawan.bagian',
-                'karyawan.jabatan',
-                'karyawan.profesi',
-                'periode'
-            ])->findOrFail($id);
+    /**
+     * Generate individual payslip for a single employee
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function generatePayslip($id)
+{
+    // Get single penggajian with related data
+    $penggajian = \App\Models\Penggajian::with([
+        'karyawan.departemen',
+        'karyawan.bagian',
+        'karyawan.jabatan',
+        'karyawan.profesi',
+        'periodeGaji'  // Changed from 'periode' to 'periodeGaji'
+    ])->findOrFail($id);
 
-            // Create a collection with single item
-            $penggajians = collect([$penggajian]);
-            $periode = $penggajian->periode;
+    // Create a collection with single item
+    $penggajians = collect([$penggajian]);
+    $periode = $penggajian->periodeGaji;  // Changed from 'periode' to 'periodeGaji'
 
-            // Pass to the same view
-            return view('penggajian.slip', compact('penggajians', 'periode'));
-        }
+    // Pass to the same view
+    return view('admin.penggajians.slip', compact('penggajians', 'periode'));
+}
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
         $penggajians = Penggajian::with(['karyawan', 'periodeGaji'])->latest()->paginate(10);
+
+        // Ensure JSON fields are properly decoded for each penggajian
+        foreach ($penggajians as $penggajian) {
+            if (is_string($penggajian->detail_tunjangan)) {
+                $penggajian->detail_tunjangan = json_decode($penggajian->detail_tunjangan, true) ?: [];
+            }
+
+            if (is_string($penggajian->detail_potongan)) {
+                $penggajian->detail_potongan = json_decode($penggajian->detail_potongan, true) ?: [];
+            }
+
+            if (is_string($penggajian->detail_departemen)) {
+                $penggajian->detail_departemen = json_decode($penggajian->detail_departemen, true) ?: [];
+            }
+        }
+
         return view('admin.penggajians.index', compact('penggajians'));
     }
 
@@ -128,7 +144,7 @@ public function generatePayslips($periodeId)
 
         // Filter by status if specified
         if ($status) {
-            $query->where('status', $status);
+            $query->where('statuskaryawan', $status);
         }
 
         // Exclude employees who already have payroll entries for this period
@@ -150,112 +166,112 @@ public function generatePayslips($periodeId)
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-{
-    $request->validate([
-        'periode_id' => 'required|exists:periodegajis,id',
-        'karyawan_ids' => 'required|array',
-        'karyawan_ids.*' => 'exists:karyawans,id',
-    ]);
+    {
+        $request->validate([
+            'periode_id' => 'required|exists:periodegajis,id',
+            'karyawan_ids' => 'required|array',
+            'karyawan_ids.*' => 'exists:karyawans,id',
+        ]);
 
-    $periodeId = $request->periode_id;
-    $karyawanIds = $request->karyawan_ids;
-    $periode = PeriodeGaji::findOrFail($periodeId);
+        $periodeId = $request->periode_id;
+        $karyawanIds = $request->karyawan_ids;
+        $periode = PeriodeGaji::findOrFail($periodeId);
 
-    $count = 0;
-    $errors = [];
+        $count = 0;
+        $errors = [];
 
-    DB::beginTransaction();
-    try {
-        foreach ($karyawanIds as $karyawanId) {
-            // Load karyawan dengan relasi yang ada
-            $karyawan = Karyawan::with(['jabatan', 'profesi', 'departemen', 'bagian'])->findOrFail($karyawanId);
+        DB::beginTransaction();
+        try {
+            foreach ($karyawanIds as $karyawanId) {
+                // Load karyawan dengan relasi yang ada
+                $karyawan = Karyawan::with(['jabatan', 'profesi', 'departemen', 'bagian'])->findOrFail($karyawanId);
 
-            // Check if payroll entry already exists for this employee and period
-            $exists = Penggajian::where('id_periode', $periodeId)
-                ->where('id_karyawan', $karyawanId)
-                ->exists();
+                // Check if payroll entry already exists for this employee and period
+                $exists = Penggajian::where('id_periode', $periodeId)
+                    ->where('id_karyawan', $karyawanId)
+                    ->exists();
 
-            if ($exists) {
-                $errors[] = "Penggajian untuk karyawan {$karyawan->nama_karyawan} pada periode ini sudah ada.";
-                continue;
-            }
+                if ($exists) {
+                    $errors[] = "Penggajian untuk karyawan {$karyawan->nama_karyawan} pada periode ini sudah ada.";
+                    continue;
+                }
 
-            // Calculate basic salary
-            $gajiPokok = $karyawan->jabatan ? $karyawan->jabatan->gaji_pokok : 0;
+                // Calculate basic salary
+                $gajiPokok = $karyawan->jabatan ? $karyawan->jabatan->gaji_pokok : 0;
 
-            // Calculate allowances
-            $tunjangan = 0;
-            $detailTunjangan = [];
+                // Calculate allowances
+                $tunjangan = 0;
+                $detailTunjangan = [];
 
-            // Tunjangan dari jabatan
-            if ($karyawan->jabatan && $karyawan->jabatan->tunjangan_jabatan > 0) {
-                $tunjangan += $karyawan->jabatan->tunjangan_jabatan;
-                $detailTunjangan[] = [
-                    'nama' => 'Tunjangan Jabatan',
-                    'nominal' => $karyawan->jabatan->tunjangan_jabatan
+                // Tunjangan dari jabatan
+                if ($karyawan->jabatan && $karyawan->jabatan->tunjangan_jabatan > 0) {
+                    $tunjangan += $karyawan->jabatan->tunjangan_jabatan;
+                    $detailTunjangan[] = [
+                        'nama' => 'Tunjangan Jabatan',
+                        'nominal' => $karyawan->jabatan->tunjangan_jabatan
+                    ];
+                }
+
+                // Tunjangan dari profesi
+                if ($karyawan->profesi && $karyawan->profesi->tunjangan_profesi > 0) {
+                    $tunjangan += $karyawan->profesi->tunjangan_profesi;
+                    $detailTunjangan[] = [
+                        'nama' => 'Tunjangan Profesi',
+                        'nominal' => $karyawan->profesi->tunjangan_profesi
+                    ];
+                }
+
+                // For now, no deductions
+                $potongan = 0;
+                $detailPotongan = [];
+
+                // Calculate net salary
+                $gajiBersih = $gajiPokok + $tunjangan - $potongan;
+
+                // Department details
+                $detailDepartemen = [
+                    'departemen' => $karyawan->departemen ? $karyawan->departemen->name_departemen : null,
+                    'bagian' => $karyawan->bagian ? $karyawan->bagian->name_bagian : null,
+                    'jabatan' => $karyawan->jabatan ? $karyawan->jabatan->name_jabatan : null,
+                    'profesi' => $karyawan->profesi ? $karyawan->profesi->name_profesi : null,
                 ];
+
+                // Create payroll entry
+                Penggajian::create([
+                    'id' => Str::uuid(),
+                    'id_periode' => $periodeId,
+                    'id_karyawan' => $karyawanId,
+                    'periode_awal' => $periode->tanggal_mulai,
+                    'periode_akhir' => $periode->tanggal_selesai,
+                    'gaji_pokok' => $gajiPokok,
+                    'tunjangan' => $tunjangan,
+                    'detail_tunjangan' => json_encode($detailTunjangan),
+                    'potongan' => $potongan,
+                    'detail_potongan' => json_encode($detailPotongan),
+                    'detail_departemen' => json_encode($detailDepartemen),
+                    'gaji_bersih' => $gajiBersih,
+                ]);
+
+                $count++;
             }
 
-            // Tunjangan dari profesi
-            if ($karyawan->profesi && $karyawan->profesi->tunjangan_profesi > 0) {
-                $tunjangan += $karyawan->profesi->tunjangan_profesi;
-                $detailTunjangan[] = [
-                    'nama' => 'Tunjangan Profesi',
-                    'nominal' => $karyawan->profesi->tunjangan_profesi
-                ];
+            DB::commit();
+
+            if ($count > 0) {
+                return redirect()->route('penggajian.index')
+                    ->with('success', "Berhasil membuat {$count} data penggajian.")
+                    ->with('errors', $errors);
+            } else {
+                return redirect()->back()
+                    ->with('error', "Tidak ada data penggajian yang dibuat.")
+                    ->with('errors', $errors);
             }
-
-            // For now, no deductions
-            $potongan = 0;
-            $detailPotongan = [];
-
-            // Calculate net salary
-            $gajiBersih = $gajiPokok + $tunjangan - $potongan;
-
-            // Department details
-            $detailDepartemen = [
-                'departemen' => $karyawan->departemen ? $karyawan->departemen->name_departemen : null,
-                'bagian' => $karyawan->bagian ? $karyawan->bagian->name_bagian : null,
-                'jabatan' => $karyawan->jabatan ? $karyawan->jabatan->name_jabatan : null,
-                'profesi' => $karyawan->profesi ? $karyawan->profesi->name_profesi : null,
-            ];
-
-            // Create payroll entry
-            Penggajian::create([
-                'id' => Str::uuid(),
-                'id_periode' => $periodeId,
-                'id_karyawan' => $karyawanId,
-                'periode_awal' => $periode->tanggal_mulai,
-                'periode_akhir' => $periode->tanggal_selesai,
-                'gaji_pokok' => $gajiPokok,
-                'tunjangan' => $tunjangan,
-                'detail_tunjangan' => json_encode($detailTunjangan),
-                'potongan' => $potongan,
-                'detail_potongan' => json_encode($detailPotongan),
-                'detail_departemen' => json_encode($detailDepartemen),
-                'gaji_bersih' => $gajiBersih,
-            ]);
-
-            $count++;
-        }
-
-        DB::commit();
-
-        if ($count > 0) {
-            return redirect()->route('penggajian.index')
-                ->with('success', "Berhasil membuat {$count} data penggajian.")
-                ->with('errors', $errors);
-        } else {
+        } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()
-                ->with('error', "Tidak ada data penggajian yang dibuat.")
-                ->with('errors', $errors);
+                ->with('error', "Terjadi kesalahan: " . $e->getMessage());
         }
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return redirect()->back()
-            ->with('error', "Terjadi kesalahan: " . $e->getMessage());
     }
-}
 
     /**
      * Display the specified resource.
@@ -263,6 +279,20 @@ public function generatePayslips($periodeId)
     public function show(Penggajian $penggajian)
     {
         $penggajian->load(['karyawan', 'periodeGaji']);
+
+        // Ensure JSON fields are properly decoded
+        if (is_string($penggajian->detail_tunjangan)) {
+            $penggajian->detail_tunjangan = json_decode($penggajian->detail_tunjangan, true) ?: [];
+        }
+
+        if (is_string($penggajian->detail_potongan)) {
+            $penggajian->detail_potongan = json_decode($penggajian->detail_potongan, true) ?: [];
+        }
+
+        if (is_string($penggajian->detail_departemen)) {
+            $penggajian->detail_departemen = json_decode($penggajian->detail_departemen, true) ?: [];
+        }
+
         return view('admin.penggajians.show', compact('penggajian'));
     }
 
@@ -272,6 +302,20 @@ public function generatePayslips($periodeId)
     public function edit(Penggajian $penggajian)
     {
         $penggajian->load(['karyawan', 'periodeGaji']);
+
+        // Ensure JSON fields are properly decoded
+        if (is_string($penggajian->detail_tunjangan)) {
+            $penggajian->detail_tunjangan = json_decode($penggajian->detail_tunjangan, true) ?: [];
+        }
+
+        if (is_string($penggajian->detail_potongan)) {
+            $penggajian->detail_potongan = json_decode($penggajian->detail_potongan, true) ?: [];
+        }
+
+        if (is_string($penggajian->detail_departemen)) {
+            $penggajian->detail_departemen = json_decode($penggajian->detail_departemen, true) ?: [];
+        }
+
         return view('admin.penggajians.edit', compact('penggajian'));
     }
 
@@ -649,179 +693,183 @@ public function generatePayslips($periodeId)
     }
 
     public function review(Request $request)
-{
-    $request->validate([
-        'karyawan_id' => 'required|exists:karyawans,id',
-        'periode_id' => 'required|exists:periodegajis,id',
-    ]);
+    {
+        $request->validate([
+            'karyawan_ids' => 'required|array',
+            'karyawan_ids.*' => 'exists:karyawans,id',
+            'periode_id' => 'required|exists:periodegajis,id',
+        ]);
 
-    $karyawanId = $request->karyawan_id;
-    $periodeId = $request->periode_id;
+        $karyawanId = $request->karyawan_ids[0];
+        $periodeId = $request->periode_id;
 
-    // Ambil data karyawan dengan relasinya
-    $karyawan = Karyawan::with(['jabatan', 'profesi', 'departemen', 'bagian'])
-        ->findOrFail($karyawanId);
+        // Ambil data karyawan dengan relasinya
+        $karyawan = Karyawan::with(['jabatan', 'profesi', 'departemen', 'bagian'])
+            ->findOrFail($karyawanId);
 
-    // Ambil data periode
-    $periode = PeriodeGaji::findOrFail($periodeId);
+        // Ambil data periode
+        $periode = PeriodeGaji::findOrFail($periodeId);
 
-    // Cek apakah sudah ada penggajian untuk karyawan & periode ini
-    $exists = Penggajian::where('id_periode', $periodeId)
-        ->where('id_karyawan', $karyawanId)
-        ->exists();
+        // Cek apakah sudah ada penggajian untuk karyawan & periode ini
+        $exists = Penggajian::where('id_periode', $periodeId)
+            ->where('id_karyawan', $karyawanId)
+            ->exists();
 
-    if ($exists) {
-        return redirect()->back()
-            ->with('error', "Penggajian untuk karyawan {$karyawan->nama_karyawan} pada periode ini sudah ada.");
-    }
-
-    // Ambil data absensi selama periode
-    $absensi = Absensi::where('karyawan_id', $karyawanId)
-        ->whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-        ->orderBy('tanggal', 'asc')
-        ->get();
-
-    // Ambil data lembur selama periode
-    $lembur = Lembur::where('karyawan_id', $karyawanId)
-        ->where('status', 'Disetujui')
-        ->whereBetween('tanggal_lembur', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-        ->get();
-
-    // Ambil data cuti selama periode
-    $cuti = CutiKaryawan::where('id_karyawan', $karyawanId)
-        ->where('status_acc', 'Disetujui')
-        ->where(function($query) use ($periode) {
-            $query->whereBetween('tanggal_mulai_cuti', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-                ->orWhereBetween('tanggal_akhir_cuti', [$periode->tanggal_mulai, $periode->tanggal_selesai]);
-        })
-        ->get();
-
-    // Hitung jumlah hari dalam periode
-    $totalHari = $periode->tanggal_mulai->diffInDays($periode->tanggal_selesai) + 1;
-
-    // Hitung jumlah hari kerja (exclude hari libur)
-    $hariLibur = Harilibur::whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-        ->pluck('tanggal')
-        ->toArray();
-
-    // Konversi tanggal ke format yang sama untuk perbandingan
-    $hariLiburFormatted = array_map(function($date) {
-        return date('Y-m-d', strtotime($date));
-    }, $hariLibur);
-
-    // Hitung jumlah hari kerja (total hari dikurangi hari libur)
-    $totalHariKerja = $totalHari;
-
-    // Kurangi hari libur
-    $currentDate = clone $periode->tanggal_mulai;
-    while ($currentDate <= $periode->tanggal_selesai) {
-        $currentDateFormatted = $currentDate->format('Y-m-d');
-
-        // Jika hari minggu atau hari libur
-        if ($currentDate->dayOfWeek === 0 || in_array($currentDateFormatted, $hariLiburFormatted)) {
-            $totalHariKerja--;
+        if ($exists) {
+            return redirect()->back()
+                ->with('error', "Penggajian untuk karyawan {$karyawan->nama_karyawan} pada periode ini sudah ada.");
         }
 
-        $currentDate->addDay();
+        // Ambil data absensi selama periode
+        $absensi = Absensi::where('karyawan_id', $karyawanId)
+            ->whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
+            ->orderBy('tanggal', 'asc')
+            ->get();
+
+        // Ambil data lembur selama periode
+        $lembur = Lembur::where('karyawan_id', $karyawanId)
+            ->where('status', 'Disetujui')
+            ->whereBetween('tanggal_lembur', [$periode->tanggal_mulai, $periode->tanggal_selesai])
+            ->get();
+
+        // Ambil data cuti selama periode
+        $cuti = CutiKaryawan::where('id_karyawan', $karyawanId)
+            ->where('status_acc', 'Disetujui')
+            ->where(function ($query) use ($periode) {
+                $query->whereBetween('tanggal_mulai_cuti', [$periode->tanggal_mulai, $periode->tanggal_selesai])
+                    ->orWhereBetween('tanggal_akhir_cuti', [$periode->tanggal_mulai, $periode->tanggal_selesai]);
+            })
+            ->get();
+
+        // Hitung jumlah hari dalam periode
+        $totalHari = $periode->tanggal_mulai->diffInDays($periode->tanggal_selesai) + 1;
+
+        // Hitung jumlah hari kerja (exclude hari libur)
+        $hariLibur = Harilibur::whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
+            ->pluck('tanggal')
+            ->toArray();
+
+        // Konversi tanggal ke format yang sama untuk perbandingan
+        $hariLiburFormatted = array_map(function ($date) {
+            return date('Y-m-d', strtotime($date));
+        }, $hariLibur);
+
+        // Hitung jumlah hari kerja (total hari dikurangi hari libur)
+        $totalHariKerja = $totalHari;
+
+        // Kurangi hari libur
+        $currentDate = clone $periode->tanggal_mulai;
+        while ($currentDate <= $periode->tanggal_selesai) {
+            $currentDateFormatted = $currentDate->format('Y-m-d');
+
+            // Jika hari minggu atau hari libur
+            if ($currentDate->dayOfWeek === 0 || in_array($currentDateFormatted, $hariLiburFormatted)) {
+                $totalHariKerja--;
+            }
+
+            $currentDate->addDay();
+        }
+
+        // Hitung total kehadiran
+        $hadirCount = $absensi->where('status', 'Hadir')->count();
+        $izinCount = $absensi->whereIn('status', ['Izin', 'Cuti'])->count();
+
+        // Tambahkan izin dari tabel cuti
+        $izinCutiCount = 0;
+        foreach ($cuti as $c) {
+            // Hitung jumlah hari cuti yang jatuh dalam periode
+            $startDate = max($c->tanggal_mulai_cuti, $periode->tanggal_mulai);
+            $endDate = min($c->tanggal_akhir_cuti, $periode->tanggal_selesai);
+            $izinCutiCount += $startDate->diffInDays($endDate) + 1;
+        }
+
+        $izinCount += $izinCutiCount;
+
+        // Hitung tidak hadir (hari kerja - hadir - izin)
+        $tidakHadirCount = $totalHariKerja - $hadirCount - $izinCount;
+        $tidakHadirCount = max(0, $tidakHadirCount); // Pastikan tidak negatif
+
+        // Hitung total keterlambatan dalam menit
+        $totalKeterlambatan = $absensi->sum('keterlambatan');
+
+        // Hitung total pulang awal dalam menit
+        $totalPulangAwal = $absensi->sum('pulang_awal');
+
+        // Hitung total lembur dalam jam
+        $totalLembur = $lembur->sum('lembur_disetujui');
+
+        // Hitung potongan ketidakhadiran (jika tidak hadir, potong gaji pokok / total hari kerja)
+        $gajiPokok = $karyawan->jabatan ? $karyawan->jabatan->gaji_pokok : 0;
+        $potonganPerHari = $gajiPokok / 30; // Asumsi 30 hari kerja per bulan
+
+        $potonganTidakHadir = round($potonganPerHari * $tidakHadirCount);
+
+        // Hitung potongan keterlambatan (asumsi: per 30 menit keterlambatan = potong 25.000)
+        $potonganPerTerlambat = 25000; // Rp 25.000 per 30 menit
+        $potonganKeterlambatan = round($potonganPerTerlambat * ($totalKeterlambatan / 30));
+
+        // Hitung tunjangan kehadiran (bonus kehadiran - potong berdasarkan ketidakhadiran)
+        $tunjanganKehadiranPenuh = 100000; // Rp 100.000 per bulan
+        $tunjanganKehadiran = $tunjanganKehadiranPenuh;
+
+        if ($tidakHadirCount > 0) {
+            $tunjanganKehadiran = 0; // Tidak dapat tunjangan kehadiran jika ada ketidakhadiran
+        } elseif ($totalKeterlambatan > 60) { // Jika terlambat lebih dari 1 jam total
+            $tunjanganKehadiran = 0;
+        }
+
+        // Hitung tunjangan lembur
+        $tarifLemburPerJam = $karyawan->jabatan ? $karyawan->jabatan->uang_lembur_biasa : 0;
+        $totalTunjanganLembur = $totalLembur * $tarifLemburPerJam;
+
+        // Hitung potongan BPJS
+        // Asumsi: BPJS Kesehatan 1% dari gaji pokok, BPJS Ketenagakerjaan 2% dari gaji pokok
+        $potonganBPJSKesehatan = round($gajiPokok * 0.01);
+        $potonganBPJSKetenagakerjaan = round($gajiPokok * 0.02);
+
+        // Data absensi untuk view
+        $dataAbsensi = [
+            'absensi' => $absensi,
+            'total_hari' => $totalHari,
+            'total_hari_kerja' => $totalHariKerja,
+            'hadir' => $hadirCount,
+            'izin' => $izinCount,
+            'tidak_hadir' => $tidakHadirCount,
+            'total_keterlambatan' => $totalKeterlambatan,
+            'total_pulang_awal' => $totalPulangAwal,
+            'total_lembur' => $totalLembur,
+            'tunjangan_kehadiran' => $tunjanganKehadiran
+        ];
+
+        // Data potongan BPJS
+        $potonganBPJS = [
+            'kesehatan' => $potonganBPJSKesehatan,
+            'ketenagakerjaan' => $potonganBPJSKetenagakerjaan
+        ];
+
+        // Data potongan absensi
+        $potonganAbsensi = [
+            'tidak_hadir' => $potonganTidakHadir,
+            'keterlambatan' => $potonganKeterlambatan
+        ];
+
+        // Ambil data master potongan
+        $dataPotongan = Potongan::all();
+
+        return view('admin.penggajians.review', compact(
+            'karyawan',
+            'periode',
+            'dataAbsensi',
+            'potonganBPJS',
+            'potonganAbsensi',
+            'dataPotongan'
+        ));
     }
 
-    // Hitung total kehadiran
-    $hadirCount = $absensi->where('status', 'Hadir')->count();
-    $izinCount = $absensi->whereIn('status', ['Izin', 'Cuti'])->count();
-
-    // Tambahkan izin dari tabel cuti
-    $izinCutiCount = 0;
-    foreach ($cuti as $c) {
-        // Hitung jumlah hari cuti yang jatuh dalam periode
-        $startDate = max($c->tanggal_mulai_cuti, $periode->tanggal_mulai);
-        $endDate = min($c->tanggal_akhir_cuti, $periode->tanggal_selesai);
-        $izinCutiCount += $startDate->diffInDays($endDate) + 1;
-    }
-
-    $izinCount += $izinCutiCount;
-
-    // Hitung tidak hadir (hari kerja - hadir - izin)
-    $tidakHadirCount = $totalHariKerja - $hadirCount - $izinCount;
-    $tidakHadirCount = max(0, $tidakHadirCount); // Pastikan tidak negatif
-
-    // Hitung total keterlambatan dalam menit
-    $totalKeterlambatan = $absensi->sum('keterlambatan');
-
-    // Hitung total pulang awal dalam menit
-    $totalPulangAwal = $absensi->sum('pulang_awal');
-
-    // Hitung total lembur dalam jam
-    $totalLembur = $lembur->sum('lembur_disetujui');
-
-    // Hitung potongan ketidakhadiran (jika tidak hadir, potong gaji pokok / total hari kerja)
-    $gajiPokok = $karyawan->jabatan ? $karyawan->jabatan->gaji_pokok : 0;
-    $potonganPerHari = $gajiPokok / 30; // Asumsi 30 hari kerja per bulan
-
-    $potonganTidakHadir = round($potonganPerHari * $tidakHadirCount);
-
-    // Hitung potongan keterlambatan (asumsi: per 30 menit keterlambatan = potong 25.000)
-    $potonganPerTerlambat = 25000; // Rp 25.000 per 30 menit
-    $potonganKeterlambatan = round($potonganPerTerlambat * ($totalKeterlambatan / 30));
-
-    // Hitung tunjangan kehadiran (bonus kehadiran - potong berdasarkan ketidakhadiran)
-    $tunjanganKehadiranPenuh = 100000; // Rp 100.000 per bulan
-    $tunjanganKehadiran = $tunjanganKehadiranPenuh;
-
-    if ($tidakHadirCount > 0) {
-        $tunjanganKehadiran = 0; // Tidak dapat tunjangan kehadiran jika ada ketidakhadiran
-    } elseif ($totalKeterlambatan > 60) { // Jika terlambat lebih dari 1 jam total
-        $tunjanganKehadiran = 0;
-    }
-
-    // Hitung tunjangan lembur
-    $tarifLemburPerJam = $karyawan->jabatan ? $karyawan->jabatan->uang_lembur_biasa : 0;
-    $totalTunjanganLembur = $totalLembur * $tarifLemburPerJam;
-
-    // Hitung potongan BPJS
-    // Asumsi: BPJS Kesehatan 1% dari gaji pokok, BPJS Ketenagakerjaan 2% dari gaji pokok
-    $potonganBPJSKesehatan = round($gajiPokok * 0.01);
-    $potonganBPJSKetenagakerjaan = round($gajiPokok * 0.02);
-
-    // Data absensi untuk view
-    $dataAbsensi = [
-        'absensi' => $absensi,
-        'total_hari' => $totalHari,
-        'total_hari_kerja' => $totalHariKerja,
-        'hadir' => $hadirCount,
-        'izin' => $izinCount,
-        'tidak_hadir' => $tidakHadirCount,
-        'total_keterlambatan' => $totalKeterlambatan,
-        'total_pulang_awal' => $totalPulangAwal,
-        'total_lembur' => $totalLembur,
-        'tunjangan_kehadiran' => $tunjanganKehadiran
-    ];
-
-    // Data potongan BPJS
-    $potonganBPJS = [
-        'kesehatan' => $potonganBPJSKesehatan,
-        'ketenagakerjaan' => $potonganBPJSKetenagakerjaan
-    ];
-
-    // Data potongan absensi
-    $potonganAbsensi = [
-        'tidak_hadir' => $potonganTidakHadir,
-        'keterlambatan' => $potonganKeterlambatan
-    ];
-
-    // Ambil data master potongan
-    $dataPotongan = Potongan::all();
-
-    return view('admin.penggajians.review', compact(
-        'karyawan',
-        'periode',
-        'dataAbsensi',
-        'potonganBPJS',
-        'potonganAbsensi',
-        'dataPotongan'
-    ));
-}
-
-/**
+    /**
+     * Process reviewed payroll and store it
+     */
+    /**
  * Process reviewed payroll and store it
  */
 public function process(Request $request)
@@ -858,20 +906,20 @@ public function process(Request $request)
             ->with('error', "Penggajian untuk karyawan {$karyawan->nama_karyawan} pada periode ini sudah ada.");
     }
 
-    // Ambil data tunjangan dan potongan
+    // Ambil data tunjangan dan potongan dari form
     $gajiPokok = $request->gaji_pokok;
     $totalTunjangan = $request->total_tunjangan;
     $totalPotongan = $request->total_potongan;
     $gajiBersih = $request->gaji_bersih;
 
     // Filter out empty tunjangan
-    $detailTunjangan = collect($request->tunjangan)->filter(function($tunjangan) {
-        return !empty($tunjangan['nama']) && $tunjangan['nominal'] > 0;
+    $detailTunjangan = collect($request->tunjangan)->filter(function ($tunjangan) {
+        return !empty($tunjangan['nama']) && isset($tunjangan['nominal']) && $tunjangan['nominal'] > 0;
     })->values()->toArray();
 
     // Filter out empty potongan
-    $detailPotongan = collect($request->potongan)->filter(function($potongan) {
-        return !empty($potongan['nama']) && $potongan['nominal'] > 0;
+    $detailPotongan = collect($request->potongan)->filter(function ($potongan) {
+        return !empty($potongan['nama']) && isset($potongan['nominal']) && $potongan['nominal'] > 0;
     })->values()->toArray();
 
     // Department details
@@ -893,10 +941,10 @@ public function process(Request $request)
             'periode_akhir' => $periode->tanggal_selesai,
             'gaji_pokok' => $gajiPokok,
             'tunjangan' => $totalTunjangan,
-            'detail_tunjangan' => json_encode($detailTunjangan),
+            'detail_tunjangan' => $detailTunjangan, // Already using mutator to handle the JSON encoding
             'potongan' => $totalPotongan,
-            'detail_potongan' => json_encode($detailPotongan),
-            'detail_departemen' => json_encode($detailDepartemen),
+            'detail_potongan' => $detailPotongan, // Already using mutator to handle the JSON encoding
+            'detail_departemen' => $detailDepartemen, // Already using mutator to handle the JSON encoding
             'gaji_bersih' => $gajiBersih,
         ]);
 

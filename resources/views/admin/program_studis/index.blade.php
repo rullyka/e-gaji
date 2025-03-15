@@ -45,6 +45,7 @@
                 <tr>
                     <th width="10">#</th>
                     <th>Nama Prodi / Jurusan</th>
+                    <th>Jenis Pendidikan</th>
                     <th>Tanggal Dibuat</th>
                     @can_show('program_studi.edit')
                     <th width="150">Action</th>
@@ -56,6 +57,11 @@
                 <tr data-id="{{ $programStudi->id }}">
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $programStudi->name_programstudi }}</td>
+                    <td>
+                        <span class="badge {{ $programStudi->education_type == 'SMA' ? 'badge-primary' : 'badge-success' }}">
+                            {{ $programStudi->education_type }}
+                        </span>
+                    </td>
                     <td>{{ $programStudi->created_at->format('d-m-Y H:i:s') }}</td>
                     @can_show('program_studi.edit')
                     <td>

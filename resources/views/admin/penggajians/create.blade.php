@@ -455,17 +455,19 @@
         // Proses penggajian untuk karyawan yang dipilih di modal
         $('#btnProsesKaryawan').on('click', function() {
             if (selectedKaryawanId) {
-                // Centang checkbox karyawan yang dipilih
-                const checkbox = $(`#karyawan_${selectedKaryawanId}`);
-                checkbox.prop('checked', true);
+                // Buat hidden input untuk karyawan_id (bukan karyawan_ids[])
+                if ($('#karyawan_id').length) {
+                    $('#karyawan_id').val(selectedKaryawanId);
+                } else {
+                    $('<input>').attr({
+                        type: 'hidden'
+                        , id: 'karyawan_id'
+                        , name: 'karyawan_id'
+                        , value: selectedKaryawanId
+                    }).appendTo('#createPenggajianForm');
+                }
 
-                // Kosongkan semua checkbox lain
-                $('.karyawan-checkbox').not(`#karyawan_${selectedKaryawanId}`).prop('checked', false);
-
-                // Ubah action form ke route review
-                $('#createPenggajianForm').attr('action', "{{ route('penggajian.review') }}");
-
-                // Submit form untuk review
+                // Submit form
                 $('#createPenggajianForm').submit();
             } else {
                 Swal.fire({

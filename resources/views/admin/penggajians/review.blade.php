@@ -494,123 +494,192 @@
 @section('js')
 <script>
     $(function() {
-                // Inisialisasi counter untuk tunjangan dan potongan tambahan
-                let tunjanganCounter = {
-                    {
-                        isset($karyawan) ?
-                            ((isset($karyawan - > jabatan) && isset($karyawan - > jabatan - > tunjangan_jabatan) && $karyawan - > jabatan - > tunjangan_jabatan > 0) ? 1 : 0) +
-                            ((isset($karyawan - > profesi) && isset($karyawan - > profesi - > tunjangan_profesi) && $karyawan - > profesi - > tunjangan_profesi > 0) ? 1 : 0) +
-                            2 : 4
-                    }
-                };
+    // Inisialisasi counter untuk tunjangan dan potongan tambahan
+    // Menghitung jumlah tunjangan yang sudah ada
+    let tunjanganInitial = 4; // Default 4 tunjangan (2 tetap + 2 tambahan)
+    if ($('input[name="tunjangan[0][nominal]"]').length > 0) tunjanganInitial = 1;
+    if ($('input[name="tunjangan[1][nominal]"]').length > 0) tunjanganInitial++;
+    if ($('input[name="tunjangan[2][nominal]"]').length > 0) tunjanganInitial++;
+    if ($('input[name="tunjangan[3][nominal]"]').length > 0) tunjanganInitial++;
+    
+    let tunjanganCounter = tunjanganInitial;
+    
+    // Menghitung jumlah potongan yang sudah ada
+    let potonganInitial = 4; // Default 4 potongan (BPJS + Absensi)
+    if ($('.potongan-item').length > 4) {
+        potonganInitial = $('.potongan-item').length;
+    }
+    
+    let potonganCounter = potonganInitial;
 
-                let potonganCounter = {
-                    {
-                        isset($dataPotongan) ? 4 + count($dataPotongan) : 4
-                    }
-                };
-
-                // Fungsi untuk menambah tunjangan
-                $('#btnTambahTunjangan').click(function() {
-                    const html = `
-                <tr class="tunjangan-row">
-                    <td>
-                        <input type="text" name="tunjangan[${tunjanganCounter}][nama]" class="form-control" placeholder="Nama Tunjangan" required>
-                    </td>
-                    <td class="d-flex">
-                        <input type="number" name="tunjangan[${tunjanganCounter}][nominal]" class="form-control tunjangan-item" value="0" min="0" required>
-                        <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-tunjangan">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-                    $('#tunjangan-tambahan').append(html);
-                    tunjanganCounter++;
-                    hitungTotal();
-                });
-
-                // Fungsi untuk menambah potongan
-                $('#btnTambahPotongan').click(function() {
-                    const html = `
-                <tr class="potongan-row">
-                    <td>
-                        <input type="text" name="potongan[${potonganCounter}][nama]" class="form-control" placeholder="Nama Potongan" required>
-                    </td>
-                    <td class="d-flex">
-                        <input type="number" name="potongan[${potonganCounter}][nominal]" class="form-control potongan-item" value="0" min="0" required>
-                        <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-potongan">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-                    $('#potongan-tambahan').append(html);
-                    potonganCounter++;
-                    hitungTotal();
-                });
-
-                // Hapus tunjangan
-                $(document).on('click', '.btn-hapus-tunjangan', function() {
-                    $(this).closest('tr').remove();
-                    hitungTotal();
-                });
-
-                // Hapus potongan
-                $(document).on('click', '.btn-hapus-potongan', function() {
-                    $(this).closest('tr').remove();
-                    hitungTotal();
-                });
-
-                // Hitung total saat nilai berubah
-                $(document).on('input', '.tunjangan-item, .potongan-item, #gaji_pokok', function() {
-                    hitungTotal();
-                });
-
-                // Fungsi untuk menghitung total
-                function hitungTotal() {
-                    let totalTunjangan = 0;
-                    let totalPotongan = 0;
-
-                    // Hitung total tunjangan
-                    $('.tunjangan-item').each(function() {
-                        const nilai = parseInt($(this).val()) || 0;
-                        totalTunjangan += nilai;
-                    });
-
-                    // Hitung total potongan
-                    $('.potongan-item').each(function() {
-                        const nilai = parseInt($(this).val()) || 0;
-                        totalPotongan += nilai;
-                    });
-
-                    // Ambil gaji pokok
-                    const gajiPokok = parseInt($('#gaji_pokok').val()) || 0;
-
-                    // Hitung gaji bersih
-                    const gajiBersih = gajiPokok + totalTunjangan - totalPotongan;
-
-                    // Update display dan hidden inputs
-                    $('#total_tunjangan').val(totalTunjangan);
-                    $('#total_potongan').val(totalPotongan);
-                    $('#gaji_bersih').val(gajiBersih);
-
-                    // Format currency
-            $('#total_tunjangan_display').val(formatRupiah(totalTunjangan));
-            $('#total_potongan_display').val(formatRupiah(totalPotongan));
-            $('#display_gaji_pokok').text(formatRupiah(gajiPokok));
-            $('#display_total_tunjangan').text(formatRupiah(totalTunjangan));
-            $('#display_total_potongan').text(formatRupiah(totalPotongan));
-            $('#gaji_bersih_display').text(formatRupiah(gajiBersih));
-        }
-
-        // Format currency ke Rupiah
-        function formatRupiah(angka) {
-            return 'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
-
-        // Inisialisasi perhitungan total
+    // Fungsi untuk menambah tunjangan
+    $('#btnTambahTunjangan').click(function() {
+        const html = `
+            <tr class="tunjangan-row">
+                <td>
+                    <input type="text" name="tunjangan[${tunjanganCounter}][nama]" class="form-control" placeholder="Nama Tunjangan" required>
+                </td>
+                <td class="d-flex">
+                    <input type="number" name="tunjangan[${tunjanganCounter}][nominal]" class="form-control tunjangan-item" value="0" min="0" required>
+                    <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-tunjangan">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        $('#tunjangan-tambahan').append(html);
+        tunjanganCounter++;
         hitungTotal();
     });
+
+    // Fungsi untuk menambah potongan
+    $('#btnTambahPotongan').click(function() {
+        const html = `
+            <tr class="potongan-row">
+                <td>
+                    <input type="text" name="potongan[${potonganCounter}][nama]" class="form-control" placeholder="Nama Potongan" required>
+                </td>
+                <td class="d-flex">
+                    <input type="number" name="potongan[${potonganCounter}][nominal]" class="form-control potongan-item" value="0" min="0" required>
+                    <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-potongan">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        $('#potongan-tambahan').append(html);
+        potonganCounter++;
+        hitungTotal();
+    });
+
+    // Hapus tunjangan
+    $(document).on('click', '.btn-hapus-tunjangan', function() {
+        $(this).closest('tr').remove();
+        // Reindex tunjangan names to prevent gaps
+        reindexTunjangan();
+        hitungTotal();
+    });
+
+    // Hapus potongan
+    $(document).on('click', '.btn-hapus-potongan', function() {
+        $(this).closest('tr').remove();
+        // Reindex potongan names to prevent gaps
+        reindexPotongan();
+        hitungTotal();
+    });
+
+    // Reindex tunjangan inputs after deletion
+    function reindexTunjangan() {
+        let index = tunjanganInitial;
+        $('#tunjangan-tambahan tr.tunjangan-row').each(function() {
+            $(this).find('input[name^="tunjangan"]').each(function() {
+                const oldName = $(this).attr('name');
+                const newName = oldName.replace(/tunjangan\[\d+\]/, `tunjangan[${index}]`);
+                $(this).attr('name', newName);
+            });
+            index++;
+        });
+        tunjanganCounter = index;
+    }
+
+    // Reindex potongan inputs after deletion
+    function reindexPotongan() {
+        let index = potonganInitial;
+        $('#potongan-tambahan tr.potongan-row').each(function() {
+            $(this).find('input[name^="potongan"]').each(function() {
+                const oldName = $(this).attr('name');
+                const newName = oldName.replace(/potongan\[\d+\]/, `potongan[${index}]`);
+                $(this).attr('name', newName);
+            });
+            index++;
+        });
+        potonganCounter = index;
+    }
+
+    // Hitung total saat nilai berubah
+    $(document).on('input', '.tunjangan-item, .potongan-item, #gaji_pokok', function() {
+        hitungTotal();
+    });
+
+    // Panggil hitung total saat halaman dimuat
+    hitungTotal();
+
+    // Fungsi untuk menghitung total
+    function hitungTotal() {
+        let totalTunjangan = 0;
+        let totalPotongan = 0;
+
+        // Hitung total tunjangan
+        $('.tunjangan-item').each(function() {
+            const nilai = parseInt($(this).val()) || 0;
+            totalTunjangan += nilai;
+        });
+
+        // Hitung total potongan
+        $('.potongan-item').each(function() {
+            const nilai = parseInt($(this).val()) || 0;
+            totalPotongan += nilai;
+        });
+
+        // Ambil gaji pokok
+        const gajiPokok = parseInt($('#gaji_pokok').val()) || 0;
+
+        // Hitung gaji bersih
+        const gajiBersih = gajiPokok + totalTunjangan - totalPotongan;
+
+        // Update display dan hidden inputs
+        $('#total_tunjangan').val(totalTunjangan);
+        $('#total_potongan').val(totalPotongan);
+        $('#gaji_bersih').val(gajiBersih);
+
+        // Format currency
+        $('#total_tunjangan_display').val(`Rp ${formatNumber(totalTunjangan)}`);
+        $('#total_potongan_display').val(`Rp ${formatNumber(totalPotongan)}`);
+        $('#display_gaji_pokok').text(`Rp ${formatNumber(gajiPokok)}`);
+        $('#display_total_tunjangan').text(`Rp ${formatNumber(totalTunjangan)}`);
+        $('#display_total_potongan').text(`Rp ${formatNumber(totalPotongan)}`);
+        $('#gaji_bersih_display').text(`Rp ${formatNumber(gajiBersih)}`);
+    }
+
+    // Format angka ke format Indonesia (dengan titik sebagai pemisah ribuan)
+    function formatNumber(number) {
+        return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    // Validate form before submission
+    $('form').on('submit', function(e) {
+        const gajiBersih = parseInt($('#gaji_bersih').val()) || 0;
+        
+        // Add validation if needed
+        if (gajiBersih < 0) {
+            e.preventDefault();
+            alert('Gaji bersih tidak boleh negatif. Silakan periksa kembali potongan yang diinput.');
+            return false;
+        }
+        
+        // Confirm submission
+        if (!confirm('Apakah Anda yakin akan memproses penggajian ini?')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    });
+
+    // Optional: Add auto calculation for BPJS
+    $('#gaji_pokok').on('change', function() {
+        const gajiPokok = parseInt($(this).val()) || 0;
+        
+        // Calculate BPJS Kesehatan (1%)
+        const bpjsKesehatan = Math.round(gajiPokok * 0.01);
+        $('input[name="potongan[0][nominal]"]').val(bpjsKesehatan);
+        
+        // Calculate BPJS Ketenagakerjaan (2%) 
+        const bpjsKetenagakerjaan = Math.round(gajiPokok * 0.02);
+        $('input[name="potongan[1][nominal]"]').val(bpjsKetenagakerjaan);
+        
+        hitungTotal();
+    });
+});
 </script>
 @stop
