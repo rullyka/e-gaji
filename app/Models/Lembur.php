@@ -10,25 +10,18 @@ class Lembur extends Model
 {
     use HasUuids;
 
-    protected $fillable = [
-        'karyawan_id',
-        'supervisor_id',
-        'tanggal_lembur',
-        'jam_mulai',
-        'jam_selesai',
-        'total_lembur',
-        'lembur_disetujui',
-        'keterangan',
-        'jenis_lembur',
-        'status',
-        'keterangan_tolak',
-        'tanggal_approval',
-        'approved_by',
+    protected $guarded = [
+        'id'
     ];
 
     protected $casts = [
         'tanggal_lembur' => 'date',
         'tanggal_approval' => 'datetime',
+        'approved_by' => 'string', // Ensure UUID is handled correctly
+    ];
+
+    protected $attributes = [
+        'approved_by' => null, // Set default value to null
     ];
 
     // Accessors

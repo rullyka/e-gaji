@@ -153,15 +153,29 @@
                                             </div>
                                         </div>
                                         <div class="col-md-4">
-                                            <div class="info-box bg-warning">
+                                            <div class="info-box bg-info">
                                                 <span class="info-box-icon"><i class="fas fa-calendar-minus"></i></span>
                                                 <div class="info-box-content">
-                                                    <span class="info-box-text">Izin/Cuti</span>
-                                                    <span class="info-box-number">{{ $dataAbsensi['izin'] ?? 0 }}
+                                                    <span class="info-box-text">Izin</span>
+                                                    <span="info-box-number">{{ $dataAbsensi['izin'] ?? 0 }}
                                                         hari</span>
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-warning">
+                                                <span class="info-box-icon"><i class="fas fa-umbrella-beach"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Cuti</span>
+                                                    <span
+                                                        class="info-box-number">{{ ($dataAbsensi['cuti'] ?? 0) + ($dataAbsensi['izin_cuti'] ?? 0) }}
+                                                        hari</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 row">
                                         <div class="col-md-4">
                                             <div class="info-box bg-danger">
                                                 <span class="info-box-icon"><i class="fas fa-calendar-times"></i></span>
@@ -172,8 +186,109 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-secondary">
+                                                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Total Keterlambatan</span>
+                                                    <span class="info-box-number">{{ $dataAbsensi['keterlambatan_display'] }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-secondary">
+                                                <span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Total Pulang Awal</span>
+                                                    <span class="info-box-number">{{ $dataAbsensi['pulang_awal_display'] }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
+                                    <div class="mt-3 row">
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-primary">
+                                                <span class="info-box-icon"><i class="fas fa-business-time"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Lembur Hari Biasa</span>
+                                                    <span
+                                                        class="info-box-number">{{ $dataAbsensi['lembur_hari_biasa'] ?? 0 }}
+                                                        jam</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-primary">
+                                                <span class="info-box-icon"><i class="fas fa-business-time"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Lembur Hari Libur</span>
+                                                    <span
+                                                        class="info-box-number">{{ $dataAbsensi['lembur_hari_libur'] ?? 0 }}
+                                                        jam</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="info-box bg-primary">
+                                                <span class="info-box-icon"><i class="fas fa-business-time"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Total Lembur</span>
+                                                    <span class="info-box-number">{{ $dataAbsensi['total_lembur'] ?? 0 }}
+                                                        jam</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Add this section after the absensi summary section -->
+                                    @if(isset($dataAbsensi['lembur_disetujui']) && count($dataAbsensi['lembur_disetujui']) > 0)
+                                    <div class="mt-3">
+                                        <h5>Detail Lembur Disetujui</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Tanggal</th>
+                                                        <th>Jam Mulai</th>
+                                                        <th>Jam Selesai</th>
+                                                        <th>Durasi</th>
+                                                        <th>Jenis</th>
+                                                        <th>Nominal</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($dataAbsensi['lembur_disetujui'] as $lembur)
+                                                    <tr>
+                                                        <td>{{ \Carbon\Carbon::parse($lembur->tanggal_lembur)->format('d-m-Y') }}</td>
+                                                        <td>{{ \Carbon\Carbon::parse($lembur->jam_mulai)->format('H:i') }}</td>
+                                                        <td>{{ \Carbon\Carbon::parse($lembur->jam_selesai)->format('H:i') }}</td>
+                                                        <td>{{ $lembur->durasi ?? '-' }} jam</td>
+                                                        <td>{{ $lembur->jenis_lembur }}</td>
+                                                        <td class="text-right">
+                                                            @if($lembur->jenis_lembur == 'Hari Libur')
+                                                                Rp {{ number_format($lembur->durasi * $karyawan->jabatan->uang_lembur_libur, 0, ',', '.') }}
+                                                            @else
+                                                                Rp {{ number_format($lembur->durasi * $karyawan->jabatan->uang_lembur_biasa, 0, ',', '.') }}
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr class="bg-light">
+                                                        <th colspan="3" class="text-right">Total</th>
+                                                        <th>{{ $dataAbsensi['total_lembur'] }} jam</th>
+                                                        <th></th>
+                                                        <th class="text-right">
+                                                            Rp {{ number_format($dataAbsensi['tunjangan_lembur_biasa'] + $dataAbsensi['tunjangan_lembur_libur'], 0, ',', '.') }}
+                                                        </th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    @endif
                                     <div class="mt-3 table-responsive">
                                         <table class="table table-bordered table-striped">
                                             <thead>
@@ -252,233 +367,290 @@
 
                             <div class="row">
                                 <!-- Gaji Pokok & Tunjangan -->
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="card card-outline card-success">
                                         <div class="card-header">
                                             <h3 class="card-title">Gaji Pokok & Tunjangan</h3>
                                         </div>
                                         <div class="card-body">
-                                            <table class="table table-bordered">
-                                                <tr>
-                                                    <th>Gaji Pokok</th>
-                                                    <td>
-                                                        <input type="number" name="gaji_pokok" id="gaji_pokok"
-                                                            class="form-control"
-                                                            value="{{ isset($karyawan->jabatan) ? $karyawan->jabatan->gaji_pokok : 0 }}"
-                                                            min="0" required readonly>
-                                                    </td>
-                                                </tr>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead class="bg-light">
+                                                        <tr>
+                                                            <th class="text-left" width="60%">Keterangan</th>
+                                                            <th class="text-right" width="40%">Nominal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <!-- Gaji Pokok -->
+                                                        <tr>
+                                                            <td>Gaji Pokok</td>
+                                                            <td class="text-right">
+                                                                <input type="text" name="gaji_pokok" id="gaji_pokok"
+                                                                    class="text-right form-control"
+                                                                    value="{{ isset($karyawan->jabatan) ? $karyawan->jabatan->gaji_pokok : 0 }}"
+                                                                    min="0" required readonly>
+                                                            </td>
+                                                        </tr>
 
-                                                <!-- Tunjangan Tetap -->
-                                                <tr class="bg-light">
-                                                    <th colspan="2" class="text-center">Tunjangan Tetap</th>
-                                                </tr>
+                                                        <!-- Divider for Tunjangan Tetap -->
+                                                        <tr class="bg-light">
+                                                            <td colspan="2" class="text-center font-weight-bold">
+                                                                Tunjangan Tetap</td>
+                                                        </tr>
 
-                                                @if (isset($karyawan->jabatan) &&
-                                                        isset($karyawan->jabatan->tunjangan_jabatan) &&
-                                                        $karyawan->jabatan->tunjangan_jabatan > 0)
+                                                        <!-- Tunjangan Jabatan -->
+                                                        @if (isset($karyawan->jabatan) &&
+                                                                isset($karyawan->jabatan->tunjangan_jabatan) &&
+                                                                $karyawan->jabatan->tunjangan_jabatan > 0)
+                                                            <tr>
+                                                                <td>Tunjangan Jabatan</td>
+                                                                <td class="text-right">
+                                                                    <input type="hidden" name="tunjangan[0][nama]"
+                                                                        value="Tunjangan Jabatan">
+                                                                    <input type="text" name="tunjangan[0][nominal]"
+                                                                        class="text-right form-control tunjangan-item"
+                                                                        value="{{ $karyawan->jabatan->tunjangan_jabatan }}"
+                                                                        min="0" required readonly>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+
+                                                        <!-- Tunjangan Profesi -->
+                                                        @if (isset($karyawan->profesi) &&
+                                                                isset($karyawan->profesi->tunjangan_profesi) &&
+                                                                $karyawan->profesi->tunjangan_profesi > 0)
+                                                            <tr>
+                                                                <td>Tunjangan Profesi</td>
+                                                                <td class="text-right">
+                                                                    <input type="hidden" name="tunjangan[1][nama]"
+                                                                        value="Tunjangan Profesi">
+                                                                    <input type="text" name="tunjangan[1][nominal]"
+                                                                        class="text-right form-control tunjangan-item"
+                                                                        value="{{ $karyawan->profesi->tunjangan_profesi }}"
+                                                                        min="0" required readonly>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+
+                                                        <!-- Divider for Tunjangan Tambahan -->
+                                                        <tr class="bg-light">
+                                                            <td colspan="2" class="text-center font-weight-bold">
+                                                                Tunjangan Tambahan</td>
+                                                        </tr>
+
+                                                        <!-- Tunjangan Lembur -->
+                                                        <!-- Tunjangan Lembur Hari Biasa -->
+                                                        <tr>
+                                                            <td>
+                                                                Tunjangan Lembur Hari Kerja
+                                                                <small class="text-muted">
+                                                                    ({{ isset($karyawan->jabatan) ? number_format($karyawan->jabatan->uang_lembur_biasa, 0, ',', '.') : 0 }}/jam)
+                                                                </small>
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <input type="hidden" name="tunjangan[2][nama]"
+                                                                    value="Tunjangan Lembur Hari Kerja">
+                                                                <input type="text" name="tunjangan[2][nominal]"
+                                                                    class="text-right form-control tunjangan-item"
+                                                                    value="{{ $dataAbsensi['tunjangan_lembur_biasa'] ?? 0 }}"
+                                                                    min="0" readonly>
+                                                            </td>
+                                                        </tr>
+
+                                                        <!-- Tunjangan Lembur Hari Libur -->
+                                                        <tr>
+                                                            <td>
+                                                                Tunjangan Lembur Hari Libur
+                                                                <small class="text-muted">
+                                                                    ({{ isset($karyawan->jabatan) ? number_format($karyawan->jabatan->uang_lembur_libur, 0, ',', '.') : 0 }}/jam)
+                                                                </small>
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <input type="hidden" name="tunjangan[3][nama]"
+                                                                    value="Tunjangan Lembur Hari Libur">
+                                                                <input type="text" name="tunjangan[3][nominal]"
+                                                                    class="text-right form-control tunjangan-item"
+                                                                    value="{{ $dataAbsensi['tunjangan_lembur_libur'] ?? 0 }}"
+                                                                    min="0" readonly>
+                                                            </td>
+                                                        </tr>
+
+                                                        <!-- Tunjangan Kehadiran -->
+                                                        <tr>
+                                                            <td>
+                                                                Tunjangan Kehadiran
+                                                                <small
+                                                                    class="text-muted">({{ number_format(100000, 0, ',', '.') }}/bulan)</small>
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <input type="hidden" name="tunjangan[4][nama]"
+                                                                    value="Tunjangan Kehadiran">
+                                                                <input type="text" name="tunjangan[4][nominal]"
+                                                                    class="text-right form-control tunjangan-item"
+                                                                    value="{{ $dataAbsensi['tunjangan_kehadiran'] ?? 0 }}"
+                                                                    min="0">
+                                                            </td>
+                                                        </tr>
+
+                                                        <!-- Premi -->
+                                                        <tr>
+                                                            <td>
+                                                                Premi
+                                                                <small class="text-muted">(Tunjangan Tambahan)</small>
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <input type="hidden" name="tunjangan[5][nama]"
+                                                                    value="Premi">
+                                                                <input type="text" name="tunjangan[5][nominal]"
+                                                                    class="text-right form-control tunjangan-item"
+                                                                    value="0" min="0">
+                                                            </td>
+                                                        </tr>
+
+                                                        <!-- Dynamic Tunjangan Container -->
+                                                    <tbody id="tunjangan-tambahan">
+                                                        <!-- Additional tunjangan items will be added here -->
+                                                    </tbody>
+
+                                                    <!-- Add Button -->
                                                     <tr>
-                                                        <th>Tunjangan Jabatan</th>
-                                                        <td>
-                                                            <input type="hidden" name="tunjangan[0][nama]"
-                                                                value="Tunjangan Jabatan">
-                                                            <input type="number" name="tunjangan[0][nominal]"
-                                                                class="form-control tunjangan-item"
-                                                                value="{{ $karyawan->jabatan->tunjangan_jabatan }}"
-                                                                min="0" required readonly>
+                                                        <td colspan="2">
+                                                            <button type="button" class="btn btn-sm btn-primary"
+                                                                id="btnTambahTunjangan">
+                                                                <i class="mr-1 fas fa-plus"></i> Tambah Tunjangan
+                                                            </button>
                                                         </td>
                                                     </tr>
-                                                @endif
 
-                                                @if (isset($karyawan->profesi) &&
-                                                        isset($karyawan->profesi->tunjangan_profesi) &&
-                                                        $karyawan->profesi->tunjangan_profesi > 0)
-                                                    <tr>
-                                                        <th>Tunjangan Profesi</th>
-                                                        <td>
-                                                            <input type="hidden" name="tunjangan[1][nama]"
-                                                                value="Tunjangan Profesi">
-                                                            <input type="number" name="tunjangan[1][nominal]"
-                                                                class="form-control tunjangan-item"
-                                                                value="{{ $karyawan->profesi->tunjangan_profesi }}"
-                                                                min="0" required readonly>
+                                                    <!-- Total Tunjangan -->
+                                                    <tr class="text-white bg-success">
+                                                        <td class="font-weight-bold">Total Tunjangan</td>
+                                                        <td class="text-right font-weight-bold">
+                                                            <input type="text" id="total_tunjangan_display"
+                                                                class="text-right text-white form-control-plaintext font-weight-bold"
+                                                                value="Rp 0" readonly>
+                                                            <input type="hidden" name="total_tunjangan"
+                                                                id="total_tunjangan" value="0">
                                                         </td>
                                                     </tr>
-                                                @endif
-
-                                                <!-- Tunjangan Tambahan -->
-                                                <tr class="bg-light">
-                                                    <th colspan="2" class="text-center">Tunjangan Tambahan</th>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>Tunjangan Lembur</th>
-                                                    <td>
-                                                        <input type="hidden" name="tunjangan[2][nama]"
-                                                            value="Tunjangan Lembur">
-                                                        <input type="number" name="tunjangan[2][nominal]"
-                                                            class="form-control tunjangan-item"
-                                                            value="{{ $dataAbsensi['total_lembur'] ?? 0 }}"
-                                                            min="0">
-                                                    </td>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>Tunjangan Kehadiran</th>
-                                                    <td>
-                                                        <input type="hidden" name="tunjangan[3][nama]"
-                                                            value="Tunjangan Kehadiran">
-                                                        <input type="number" name="tunjangan[3][nominal]"
-                                                            class="form-control tunjangan-item"
-                                                            value="{{ $dataAbsensi['tunjangan_kehadiran'] ?? 0 }}"
-                                                            min="0">
-                                                    </td>
-                                                </tr>
-
-                                                <!-- Tombol untuk menambah tunjangan dinamis -->
-                                                <tr>
-                                                    <td colspan="2">
-                                                        <button type="button" class="btn btn-sm btn-primary"
-                                                            id="btnTambahTunjangan">
-                                                            <i class="mr-1 fas fa-plus"></i> Tambah Tunjangan
-                                                        </button>
-                                                    </td>
-                                                </tr>
-
-                                                <!-- Container untuk tunjangan dinamis -->
-                                                <tbody id="tunjangan-tambahan">
-                                                    <!-- Tunjangan dinamis akan ditambahkan di sini -->
-                                                </tbody>
-
-                                                <!-- Total Tunjangan -->
-                                                <tr class="bg-success">
-                                                    <th>Total Tunjangan</th>
-                                                    <td>
-                                                        <input type="text" id="total_tunjangan_display"
-                                                            class="form-control-plaintext font-weight-bold" value="Rp 0"
-                                                            readonly>
-                                                        <input type="hidden" name="total_tunjangan" id="total_tunjangan"
-                                                            value="0">
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Potongan -->
-                                <div class="col-md-6">
+                                <div class="mt-3 col-md-12">
                                     <div class="card card-outline card-danger">
                                         <div class="card-header">
                                             <h3 class="card-title">Potongan</h3>
                                         </div>
                                         <div class="card-body">
-                                            <table class="table table-bordered">
-                                                <tr class="bg-light">
-                                                    <th colspan="2" class="text-center">Potongan Wajib</th>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>BPJS Kesehatan (1%)</th>
-                                                    <td>
-                                                        <input type="hidden" name="potongan[0][nama]"
-                                                            value="BPJS Kesehatan">
-                                                        <input type="number" name="potongan[0][nominal]"
-                                                            class="form-control potongan-item"
-                                                            value="{{ $potonganBPJS['kesehatan'] ?? 0 }}" min="0"
-                                                            required>
-                                                    </td>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>BPJS Ketenagakerjaan (2%)</th>
-                                                    <td>
-                                                        <input type="hidden" name="potongan[1][nama]"
-                                                            value="BPJS Ketenagakerjaan">
-                                                        <input type="number" name="potongan[1][nominal]"
-                                                            class="form-control potongan-item"
-                                                            value="{{ $potonganBPJS['ketenagakerjaan'] ?? 0 }}"
-                                                            min="0" required>
-                                                    </td>
-                                                </tr>
-
-                                                <tr class="bg-light">
-                                                    <th colspan="2" class="text-center">Potongan Absensi</th>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>Potongan Ketidakhadiran</th>
-                                                    <td>
-                                                        <input type="hidden" name="potongan[2][nama]"
-                                                            value="Potongan Ketidakhadiran">
-                                                        <input type="number" name="potongan[2][nominal]"
-                                                            class="form-control potongan-item"
-                                                            value="{{ $potonganAbsensi['tidak_hadir'] ?? 0 }}"
-                                                            min="0">
-                                                    </td>
-                                                </tr>
-
-                                                <tr>
-                                                    <th>Potongan Keterlambatan</th>
-                                                    <td>
-                                                        <input type="hidden" name="potongan[3][nama]"
-                                                            value="Potongan Keterlambatan">
-                                                        <input type="number" name="potongan[3][nominal]"
-                                                            class="form-control potongan-item"
-                                                            value="{{ $potonganAbsensi['keterlambatan'] ?? 0 }}"
-                                                            min="0">
-                                                    </td>
-                                                </tr>
-
-                                                <!-- Potongan dari master -->
-                                                @if (isset($dataPotongan) && count($dataPotongan) > 0)
-                                                    <tr class="bg-light">
-                                                        <th colspan="2" class="text-center">Potongan Master</th>
-                                                    </tr>
-
-                                                    @foreach ($dataPotongan as $index => $potongan)
+                                            <div class="table-responsive">
+                                                <table class="table table-striped">
+                                                    <thead class="bg-light">
                                                         <tr>
-                                                            <th>{{ $potongan->nama_potongan }}</th>
+                                                            <th class="text-left" width="60%">Keterangan</th>
+                                                            <th class="text-right" width="40%">Nominal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <!-- Divider for Potongan Absensi -->
+                                                        <tr class="bg-light">
+                                                            <td colspan="2" class="text-center font-weight-bold">
+                                                                Potongan Absensi</td>
+                                                        </tr>
+
+                                                        <!-- Potongan Ketidakhadiran -->
+                                                        <tr>
                                                             <td>
-                                                                <input type="hidden"
-                                                                    name="potongan[{{ 4 + $index }}][nama]"
-                                                                    value="{{ $potongan->nama_potongan }}">
-                                                                <input type="number"
-                                                                    name="potongan[{{ 4 + $index }}][nominal]"
-                                                                    class="form-control potongan-item" value="0"
+                                                                Potongan Ketidakhadiran
+                                                                <small class="text-muted">
+                                                                    ({{ isset($karyawan->jabatan) ? number_format($karyawan->jabatan->gaji_pokok / 30, 0, ',', '.') : 0 }}/hari)
+                                                                </small>
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <input type="hidden" name="potongan[0][nama]"
+                                                                    value="Potongan Ketidakhadiran">
+                                                                <input type="text" name="potongan[0][nominal]"
+                                                                    class="text-right form-control potongan-item"
+                                                                    value="{{ $potonganAbsensi['tidak_hadir'] ?? 0 }}"
                                                                     min="0">
                                                             </td>
                                                         </tr>
-                                                    @endforeach
-                                                @endif
 
-                                                <!-- Tombol untuk menambah potongan dinamis -->
-                                                <tr>
-                                                    <td colspan="2">
-                                                        <button type="button" class="btn btn-sm btn-danger"
-                                                            id="btnTambahPotongan">
-                                                            <i class="mr-1 fas fa-plus"></i> Tambah Potongan
-                                                        </button>
-                                                    </td>
-                                                </tr>
+                                                        <!-- Potongan Keterlambatan -->
+                                                        <tr>
+                                                            <td>
+                                                                Potongan Keterlambatan
+                                                                <small
+                                                                    class="text-muted">({{ number_format(25000, 0, ',', '.') }}/30
+                                                                    menit)</small>
+                                                            </td>
+                                                            <td class="text-right">
+                                                                <input type="hidden" name="potongan[1][nama]"
+                                                                    value="Potongan Keterlambatan">
+                                                                <input type="text" name="potongan[1][nominal]"
+                                                                    class="text-right form-control potongan-item"
+                                                                    value="{{ $potonganAbsensi['keterlambatan'] ?? 0 }}"
+                                                                    min="0">
+                                                            </td>
+                                                        </tr>
 
-                                                <!-- Container untuk potongan dinamis -->
-                                                <tbody id="potongan-tambahan">
-                                                    <!-- Potongan dinamis akan ditambahkan di sini -->
-                                                </tbody>
+                                                        <!-- Potongan Master -->
+                                                        @if (isset($dataPotongan) && count($dataPotongan) > 0)
+                                                            <tr class="bg-light">
+                                                                <td colspan="2" class="text-center font-weight-bold">
+                                                                    Potongan Master</td>
+                                                            </tr>
 
-                                                <!-- Total Potongan -->
-                                                <tr class="bg-danger">
-                                                    <th>Total Potongan</th>
-                                                    <td>
-                                                        <input type="text" id="total_potongan_display"
-                                                            class="form-control-plaintext font-weight-bold" value="Rp 0"
-                                                            readonly>
-                                                        <input type="hidden" name="total_potongan" id="total_potongan"
-                                                            value="0">
-                                                    </td>
-                                                </tr>
-                                            </table>
+                                                            @foreach ($dataPotongan as $index => $potongan)
+                                                                <tr>
+                                                                    <td>{{ $potongan->nama_potongan }}</td>
+                                                                    <td class="text-right">
+                                                                        <input type="hidden"
+                                                                            name="potongan[{{ 2 + $index }}][nama]"
+                                                                            value="{{ $potongan->nama_potongan }}">
+                                                                        <input type="text"
+                                                                            name="potongan[{{ 2 + $index }}][nominal]"
+                                                                            class="text-right form-control potongan-item"
+                                                                            value="0" min="0">
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        @endif
+
+                                                        <!-- Dynamic Potongan Container -->
+                                                    <tbody id="potongan-tambahan">
+                                                        <!-- Additional potongan items will be added here -->
+                                                    </tbody>
+
+                                                    <!-- Add Button -->
+                                                    <tr>
+                                                        <td colspan="2">
+                                                            <button type="button" class="btn btn-sm btn-danger"
+                                                                id="btnTambahPotongan">
+                                                                <i class="mr-1 fas fa-plus"></i> Tambah Potongan
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+
+                                                    <!-- Total Potongan -->
+                                                    <tr class="text-white bg-danger">
+                                                        <td class="font-weight-bold">Total Potongan</td>
+                                                        <td class="text-right font-weight-bold">
+                                                            <input type="text" id="total_potongan_display"
+                                                                class="text-right text-white form-control-plaintext font-weight-bold"
+                                                                value="Rp 0" readonly>
+                                                            <input type="hidden" name="total_potongan"
+                                                                id="total_potongan" value="0">
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -490,49 +662,44 @@
                                     <h3 class="card-title">Total Gaji</h3>
                                 </div>
                                 <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="info-box bg-primary">
-                                                <span class="info-box-icon"><i class="fas fa-money-bill-wave"></i></span>
-                                                <div class="info-box-content">
-                                                    <span class="info-box-text">Gaji Pokok</span>
-                                                    <span class="info-box-number" id="display_gaji_pokok">Rp
-                                                        {{ isset($karyawan->jabatan) ? number_format($karyawan->jabatan->gaji_pokok, 0, ',', '.') : 0 }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="info-box bg-success">
-                                                <span class="info-box-icon"><i class="fas fa-plus"></i></span>
-                                                <div class="info-box-content">
-                                                    <span class="info-box-text">Total Tunjangan</span>
-                                                    <span class="info-box-number" id="display_total_tunjangan">Rp 0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="info-box bg-danger">
-                                                <span class="info-box-icon"><i class="fas fa-minus"></i></span>
-                                                <div class="info-box-content">
-                                                    <span class="info-box-text">Total Potongan</span>
-                                                    <span class="info-box-number" id="display_total_potongan">Rp 0</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th class="text-left">Keterangan</th>
+                                                    <th class="text-right">Nominal</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>Gaji Pokok</strong></td>
+                                                    <td class="text-right"><span id="display_gaji_pokok">Rp
+                                                            {{ isset($karyawan->jabatan) ? number_format($karyawan->jabatan->gaji_pokok, 0, ',', '.') : 0 }}</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Total Tunjangan</strong></td>
+                                                    <td class="text-right"><span id="display_total_tunjangan"
+                                                            class="text-success">Rp 0</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Total Potongan</strong></td>
+                                                    <td class="text-right"><span id="display_total_potongan"
+                                                            class="text-danger">Rp 0</span></td>
+                                                </tr>
+                                                <tr class="text-white bg-primary">
+                                                    <td class="font-weight-bold">GAJI BERSIH</td>
+                                                    <td class="text-right font-weight-bold">
+                                                        <span id="gaji_bersih_display">Rp 0</span>
+                                                        <input type="hidden" name="gaji_bersih" id="gaji_bersih"
+                                                            value="0">
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
 
-                                    <div class="mt-3 row">
-                                        <div class="col-md-12">
-                                            <div class="alert alert-success">
-                                                <h4 class="text-center">Total Gaji Bersih</h4>
-                                                <h2 class="text-center" id="gaji_bersih_display">Rp 0</h2>
-                                                <input type="hidden" name="gaji_bersih" id="gaji_bersih"
-                                                    value="0">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="mt-3 row">
+                                    <div class="mt-4 row">
                                         <div class="text-center col-md-12">
                                             <button type="button" class="mr-2 btn btn-secondary btn-lg"
                                                 onclick="window.history.back();">
@@ -569,192 +736,219 @@
 @section('js')
     <script>
         $(function() {
-            // Inisialisasi counter untuk tunjangan dan potongan tambahan
-            // Menghitung jumlah tunjangan yang sudah ada
-            let tunjanganInitial = 4; // Default 4 tunjangan (2 tetap + 2 tambahan)
-            if ($('input[name="tunjangan[0][nominal]"]').length > 0) tunjanganInitial = 1;
-            if ($('input[name="tunjangan[1][nominal]"]').length > 0) tunjanganInitial++;
-            if ($('input[name="tunjangan[2][nominal]"]').length > 0) tunjanganInitial++;
-            if ($('input[name="tunjangan[3][nominal]"]').length > 0) tunjanganInitial++;
+            // Format currency function
+            function formatRupiah(angka) {
+                if (angka === null || angka === undefined || angka === '') {
+                    return 'Rp 0';
+                }
 
-            let tunjanganCounter = tunjanganInitial;
+                var number_string = angka.toString().replace(/[^,\d]/g, ''),
+                    split = number_string.split(','),
+                    sisa = split[0].length % 3,
+                    rupiah = split[0].substr(0, sisa),
+                    ribuan = split[0].substr(sisa).match(/\d{3}/gi);
 
-            // Menghitung jumlah potongan yang sudah ada
-            let potonganInitial = 4; // Default 4 potongan (BPJS + Absensi)
-            if ($('.potongan-item').length > 4) {
-                potonganInitial = $('.potongan-item').length;
+                if (ribuan) {
+                    separator = sisa ? '.' : '';
+                    rupiah += separator + ribuan.join('.');
+                }
+
+                rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+                return 'Rp ' + rupiah;
             }
 
-            let potonganCounter = potonganInitial;
+            // Make sure lembur values are properly loaded
+            function updateLemburValues() {
+                // Get lembur biasa value
+                let lemburBiasa = $('input[name="tunjangan[2][nominal]"]');
+                let lemburBiasaValue = lemburBiasa.val().replace(/[^\d]/g, '');
+                lemburBiasa.attr('data-value', lemburBiasaValue);
+                lemburBiasa.val(formatRupiah(lemburBiasaValue));
 
-            // Fungsi untuk menambah tunjangan
-            $('#btnTambahTunjangan').click(function() {
-                const html = `
-            <tr class="tunjangan-row">
-                <td>
-                    <input type="text" name="tunjangan[${tunjanganCounter}][nama]" class="form-control" placeholder="Nama Tunjangan" required>
-                </td>
-                <td class="d-flex">
-                    <input type="number" name="tunjangan[${tunjanganCounter}][nominal]" class="form-control tunjangan-item" value="0" min="0" required>
-                    <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-tunjangan">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-                $('#tunjangan-tambahan').append(html);
-                tunjanganCounter++;
-                hitungTotal();
-            });
-
-            // Fungsi untuk menambah potongan
-            $('#btnTambahPotongan').click(function() {
-                const html = `
-            <tr class="potongan-row">
-                <td>
-                    <input type="text" name="potongan[${potonganCounter}][nama]" class="form-control" placeholder="Nama Potongan" required>
-                </td>
-                <td class="d-flex">
-                    <input type="number" name="potongan[${potonganCounter}][nominal]" class="form-control potongan-item" value="0" min="0" required>
-                    <button type="button" class="ml-2 btn btn-sm btn-danger btn-hapus-potongan">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-                $('#potongan-tambahan').append(html);
-                potonganCounter++;
-                hitungTotal();
-            });
-
-            // Hapus tunjangan
-            $(document).on('click', '.btn-hapus-tunjangan', function() {
-                $(this).closest('tr').remove();
-                // Reindex tunjangan names to prevent gaps
-                reindexTunjangan();
-                hitungTotal();
-            });
-
-            // Hapus potongan
-            $(document).on('click', '.btn-hapus-potongan', function() {
-                $(this).closest('tr').remove();
-                // Reindex potongan names to prevent gaps
-                reindexPotongan();
-                hitungTotal();
-            });
-
-            // Reindex tunjangan inputs after deletion
-            function reindexTunjangan() {
-                let index = tunjanganInitial;
-                $('#tunjangan-tambahan tr.tunjangan-row').each(function() {
-                    $(this).find('input[name^="tunjangan"]').each(function() {
-                        const oldName = $(this).attr('name');
-                        const newName = oldName.replace(/tunjangan\[\d+\]/, `tunjangan[${index}]`);
-                        $(this).attr('name', newName);
-                    });
-                    index++;
-                });
-                tunjanganCounter = index;
+                // Get lembur libur value
+                let lemburLibur = $('input[name="tunjangan[3][nominal]"]');
+                let lemburLiburValue = lemburLibur.val().replace(/[^\d]/g, '');
+                lemburLibur.attr('data-value', lemburLiburValue);
+                lemburLibur.val(formatRupiah(lemburLiburValue));
             }
 
-            // Reindex potongan inputs after deletion
-            function reindexPotongan() {
-                let index = potonganInitial;
-                $('#potongan-tambahan tr.potongan-row').each(function() {
-                    $(this).find('input[name^="potongan"]').each(function() {
-                        const oldName = $(this).attr('name');
-                        const newName = oldName.replace(/potongan\[\d+\]/, `potongan[${index}]`);
-                        $(this).attr('name', newName);
-                    });
-                    index++;
-                });
-                potonganCounter = index;
-            }
-
-            // Hitung total saat nilai berubah
-            $(document).on('input', '.tunjangan-item, .potongan-item, #gaji_pokok', function() {
-                hitungTotal();
-            });
-
-            // Panggil hitung total saat halaman dimuat
-            hitungTotal();
-
-            // Fungsi untuk menghitung total
-            function hitungTotal() {
-                let totalTunjangan = 0;
-                let totalPotongan = 0;
-
-                // Hitung total tunjangan
+            // Apply currency format to all numeric inputs
+            function applyRupiahFormat() {
+                // Format tunjangan items
                 $('.tunjangan-item').each(function() {
-                    const nilai = parseInt($(this).val()) || 0;
-                    totalTunjangan += nilai;
+                    const value = $(this).val();
+                    $(this).attr('data-value', value);
+                    $(this).val(formatRupiah(value));
                 });
 
-                // Hitung total potongan
+                // Format potongan items
                 $('.potongan-item').each(function() {
-                    const nilai = parseInt($(this).val()) || 0;
-                    totalPotongan += nilai;
+                    const value = $(this).val();
+                    $(this).attr('data-value', value);
+                    $(this).val(formatRupiah(value));
                 });
 
-                // Ambil gaji pokok
-                const gajiPokok = parseInt($('#gaji_pokok').val()) || 0;
+                // Format gaji pokok
+                const gajiPokok = $('#gaji_pokok').val();
+                $('#gaji_pokok').attr('data-value', gajiPokok);
+                $('#gaji_pokok').val(formatRupiah(gajiPokok));
 
-                // Hitung gaji bersih
+                // Update lembur values specifically
+                updateLemburValues();
+
+                // Calculate totals after formatting
+                calculateTotals();
+            }
+
+            // Handle focus and blur events for currency formatting
+            $(document).on('focus', '.tunjangan-item, .potongan-item, #gaji_pokok', function() {
+                // On focus, show the raw value for editing
+                const value = $(this).attr('data-value') || $(this).val().replace(/[^\d]/g, '');
+                $(this).val(value);
+            });
+
+            $(document).on('blur', '.tunjangan-item, .potongan-item, #gaji_pokok', function() {
+                // On blur, format the value
+                const value = $(this).val().replace(/[^\d]/g, '');
+                $(this).attr('data-value', value);
+                $(this).val(formatRupiah(value));
+                calculateTotals();
+            });
+
+            // Calculate totals with the actual numeric values
+            function calculateTotals() {
+                let totalTunjangan = 0;
+                $('.tunjangan-item').each(function() {
+                    const value = $(this).attr('data-value') || $(this).val().replace(/[^\d]/g, '');
+                    totalTunjangan += parseInt(value || 0);
+                });
+
+                let totalPotongan = 0;
+                $('.potongan-item').each(function() {
+                    const value = $(this).attr('data-value') || $(this).val().replace(/[^\d]/g, '');
+                    totalPotongan += parseInt(value || 0);
+                });
+
+                const gajiPokok = parseInt($('#gaji_pokok').attr('data-value') || $('#gaji_pokok').val().replace(/[^\d]/g, '') || 0);
                 const gajiBersih = gajiPokok + totalTunjangan - totalPotongan;
 
-                // Update display dan hidden inputs
+                // Update hidden fields with numeric values
                 $('#total_tunjangan').val(totalTunjangan);
                 $('#total_potongan').val(totalPotongan);
                 $('#gaji_bersih').val(gajiBersih);
 
-                // Format currency
-                $('#total_tunjangan_display').val(`Rp ${formatNumber(totalTunjangan)}`);
-                $('#total_potongan_display').val(`Rp ${formatNumber(totalPotongan)}`);
-                $('#display_gaji_pokok').text(`Rp ${formatNumber(gajiPokok)}`);
-                $('#display_total_tunjangan').text(`Rp ${formatNumber(totalTunjangan)}`);
-                $('#display_total_potongan').text(`Rp ${formatNumber(totalPotongan)}`);
-                $('#gaji_bersih_display').text(`Rp ${formatNumber(gajiBersih)}`);
+                // Update display fields with formatted values
+                $('#total_tunjangan_display').val(formatRupiah(totalTunjangan));
+                $('#total_potongan_display').val(formatRupiah(totalPotongan));
+                $('#display_total_tunjangan').text(formatRupiah(totalTunjangan));
+                $('#display_total_potongan').text(formatRupiah(totalPotongan));
+                $('#display_gaji_pokok').text(formatRupiah(gajiPokok));
+                $('#gaji_bersih_display').text(formatRupiah(gajiBersih));
             }
 
-            // Format angka ke format Indonesia (dengan titik sebagai pemisah ribuan)
-            function formatNumber(number) {
-                return new Intl.NumberFormat('id-ID').format(number);
-            }
-
-            // Validate form before submission
-            $('form').on('submit', function(e) {
-                const gajiBersih = parseInt($('#gaji_bersih').val()) || 0;
-
-                // Add validation if needed
-                if (gajiBersih < 0) {
-                    e.preventDefault();
-                    alert(
-                    'Gaji bersih tidak boleh negatif. Silakan periksa kembali potongan yang diinput.');
-                    return false;
-                }
-
-                // Confirm submission
-                if (!confirm('Apakah Anda yakin akan memproses penggajian ini?')) {
-                    e.preventDefault();
-                    return false;
-                }
-
+            // Handle form submission to convert back to numeric values
+            $('form').on('submit', function() {
+                $('.tunjangan-item, .potongan-item, #gaji_pokok').each(function() {
+                    $(this).val($(this).attr('data-value') || $(this).val().replace(/[^\d]/g, ''));
+                });
                 return true;
             });
 
-            // Optional: Add auto calculation for BPJS
-            $('#gaji_pokok').on('change', function() {
-                const gajiPokok = parseInt($(this).val()) || 0;
+            // Apply Rupiah format on page load
+            applyRupiahFormat();
+            calculateTotals();
 
-                // Calculate BPJS Kesehatan (1%)
-                const bpjsKesehatan = Math.round(gajiPokok * 0.01);
-                $('input[name="potongan[0][nominal]"]').val(bpjsKesehatan);
+            // Inisialisasi counter untuk tunjangan dan potongan tambahan
+            let tunjanganInitial = 6; // Updated to 6 tunjangan (2 tetap + 4 tambahan)
+            if ($('input[name="tunjangan[0][nominal]"]').length > 0) tunjanganInitial = 1;
+            if ($('input[name="tunjangan[1][nominal]"]').length > 0) tunjanganInitial++;
+            if ($('input[name="tunjangan[2][nominal]"]').length > 0) tunjanganInitial++;
+            if ($('input[name="tunjangan[3][nominal]"]').length > 0) tunjanganInitial++;
+            if ($('input[name="tunjangan[4][nominal]"]').length > 0) tunjanganInitial++;
+            if ($('input[name="tunjangan[5][nominal]"]').length > 0) tunjanganInitial++;
 
-                // Calculate BPJS Ketenagakerjaan (2%)
-                const bpjsKetenagakerjaan = Math.round(gajiPokok * 0.02);
-                $('input[name="potongan[1][nominal]"]').val(bpjsKetenagakerjaan);
+            let tunjanganCounter = tunjanganInitial;
 
-                hitungTotal();
+            // Add dynamic tunjangan
+            $('#btnTambahTunjangan').click(function() {
+                $('#tunjangan-tambahan').append(`
+                    <tr>
+                        <td class="pl-2">
+                            <div class="input-group">
+                                <input type="text" name="tunjangan[${tunjanganCounter}][nama]"
+                                    class="form-control" placeholder="Nama Tunjangan" required>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="pr-2">
+                            <div class="input-group">
+                                <input type="text" name="tunjangan[${tunjanganCounter}][nominal]"
+                                    class="text-right form-control tunjangan-item" value="0" min="0">
+                            </div>
+                        </td>
+                    </tr>
+                `);
+
+                // Apply currency format to the new input
+                const newInput = $(`input[name="tunjangan[${tunjanganCounter}][nominal]"]`);
+                newInput.attr('data-value', '0');
+                newInput.val(formatRupiah('0'));
+
+                tunjanganCounter++;
+                calculateTotals();
+            });
+
+            // Menghitung jumlah potongan yang sudah ada
+            let potonganInitial = 2; // Default: potongan ketidakhadiran dan keterlambatan
+
+            // Tambahkan potongan master jika ada
+            @if(isset($dataPotongan))
+                potonganInitial += {{ count($dataPotongan) }};
+            @endif
+
+            let potonganCounter = potonganInitial;
+
+            // Add dynamic potongan
+            $('#btnTambahPotongan').click(function() {
+                $('#potongan-tambahan').append(`
+                    <tr>
+                        <td class="pl-2">
+                            <div class="input-group">
+                                <input type="text" name="potongan[${potonganCounter}][nama]"
+                                    class="form-control" placeholder="Nama Potongan" required>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-item">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="pr-2">
+                            <div class="input-group">
+                                <input type="text" name="potongan[${potonganCounter}][nominal]"
+                                    class="text-right form-control potongan-item" value="0" min="0">
+                            </div>
+                        </td>
+                    </tr>
+                `);
+
+                // Apply currency format to the new input
+                const newInput = $(`input[name="potongan[${potonganCounter}][nominal]"]`);
+                newInput.attr('data-value', '0');
+                newInput.val(formatRupiah('0'));
+
+                potonganCounter++;
+                calculateTotals();
+            });
+
+            // Remove dynamic item
+            $(document).on('click', '.btn-remove-item', function() {
+                $(this).closest('tr').remove();
+                calculateTotals();
             });
         });
     </script>

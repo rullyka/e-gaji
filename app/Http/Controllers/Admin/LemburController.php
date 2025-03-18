@@ -239,7 +239,16 @@ class LemburController extends Controller
         $lembur->keterangan_tolak = $request->status == 'Ditolak' ? $request->keterangan_tolak : null;
         $lembur->lembur_disetujui = $request->status == 'Disetujui' ? $request->lembur_disetujui : null;
         $lembur->tanggal_approval = now();
-        $lembur->approved_by = Auth::id();
+        
+        // Pastikan user yang login adalah karyawan yang valid
+        $currentUser = Auth::user();
+        if ($currentUser && Karyawan::find($currentUser->id)) {
+            $lembur->approved_by = $currentUser->id;
+        } else {
+            // Jika tidak valid, set ke null
+            $lembur->approved_by = null;
+        }
+        
         $lembur->save();
 
         // Redirect ke halaman index dengan pesan sukses
