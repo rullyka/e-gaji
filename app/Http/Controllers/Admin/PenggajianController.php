@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Support\Facades\Log;  // Tambahkan import Log yang benar
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\Lembur;
 use App\Models\Absensi;
 use App\Models\Karyawan;
 use App\Models\Potongan;
-
 use App\Models\Harilibur;
 use App\Models\Departemen;
 use App\Models\Penggajian;
 use App\Models\PeriodeGaji;
-
 use App\Models\CutiKaryawan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 
 class PenggajianController extends Controller
 {
@@ -52,153 +51,7 @@ class PenggajianController extends Controller
 
         // Prepare additional data for each penggajian
         foreach ($penggajians as $penggajian) {
-            // Load attendance data
-            $absensi = Absensi::where('karyawan_id', $penggajian->id_karyawan)
-                ->whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-                ->orderBy('tanggal', 'asc')
-                ->get();
-
-            // Load overtime data
-            $lembur = Lembur::where('karyawan_id', $penggajian->id_karyawan)
-                ->where('status', 'Disetujui')
-                ->whereBetween('tanggal_lembur', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-                ->get();
-
-            // Load leave data
-            $cuti = CutiKaryawan::where('id_karyawan', $penggajian->id_karyawan)
-                ->where('status_acc', 'Disetujui')
-                ->where(function ($query) use ($periode) {
-                    $query->whereBetween('tanggal_mulai_cuti', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-                        ->orWhereBetween('tanggal_akhir_cuti', [$periode->tanggal_mulai, $periode->tanggal_selesai]);
-                })
-                ->get();
-
-            // Calculate total days in period
-            $totalHari = $periode->tanggal_mulai->diffInDays($periode->tanggal_selesai) + 1;
-
-            // Get holidays
-            $hariLibur = Harilibur::whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
-                ->pluck('tanggal')
-                ->toArray();
-
-            // Format holidays for comparison
-            $hariLiburFormatted = array_map(function ($date) {
-                return date('Y-m-d', strtotime($date));
-            }, $hariLibur);
-
-            // Calculate working days
-            $hariKerja = $totalHari;
-            $currentDate = clone $periode->tanggal_mulai;
-
-            while ($currentDate <= $periode->tanggal_selesai) {
-                $currentDateFormatted = $currentDate->format('Y-m-d');
-
-                // If Sunday or holiday
-                if ($currentDate->dayOfWeek === 0 || in_array($currentDateFormatted, $hariLiburFormatted)) {
-                    $hariKerja--;
-                }
-
-                $currentDate->addDay();
-            }
-
-            // Calculate attendance statistics
-            $hariHadir = $absensi->where('status', 'Hadir')->count();
-            $hariIzin = $absensi->where('status', 'Izin')->count();
-            $hariCuti = $absensi->where('status', 'Cuti')->count();
-
-            // Add leave days from leave table
-            $izinCuti = 0;
-            foreach ($cuti as $c) {
-                $startDate = max($c->tanggal_mulai_cuti, $periode->tanggal_mulai);
-                $endDate = min($c->tanggal_akhir_cuti, $periode->tanggal_selesai);
-                $izinCuti += $startDate->diffInDays($endDate) + 1;
-            }
-
-            // Calculate absences
-            $hariTidakHadir = $hariKerja - $hariHadir - $hariIzin - $hariCuti - $izinCuti;
-            $hariTidakHadir = max(0, $hariTidakHadir);
-
-            // Calculate attendance rate
-            $kehadiranRate = $hariKerja > 0 ? round(($hariHadir / $hariKerja) * 100, 2) : 0;
-
-            // Calculate total lateness in minutes
-            $totalKeterlambatan = $absensi->sum('keterlambatan');
-
-            // Format keterlambatan in days and minutes
-            $hariKeterlambatan = floor($totalKeterlambatan / (60 * 8)); // Assuming 8 hours = 1 work day
-            $menitKeterlambatan = $totalKeterlambatan % (60 * 8);
-
-            // Format keterlambatan for display
-            $keterlambatanFormatted = '';
-            if ($hariKeterlambatan > 0) {
-                $keterlambatanFormatted = $hariKeterlambatan . ' hari / ';
-            }
-            $keterlambatanFormatted .= $totalKeterlambatan . ' menit';
-
-            // Calculate total early departure in minutes
-            $totalPulangAwal = $absensi->sum('pulang_awal');
-
-            // Format pulang awal in days and minutes
-            $hariPulangAwal = floor($totalPulangAwal / (60 * 8)); // Assuming 8 hours = 1 work day
-            $menitPulangAwal = $totalPulangAwal % (60 * 8);
-
-            // Format pulang awal for display
-            $pulangAwalFormatted = '';
-            if ($hariPulangAwal > 0) {
-                $pulangAwalFormatted = $hariPulangAwal . ' hari / ';
-            }
-            $pulangAwalFormatted .= $totalPulangAwal . ' menit';
-
-            // Calculate overtime hours
-            $totalLembur = 0;
-            $lemburHariBiasa = 0;
-            $lemburHariLibur = 0;
-
-            foreach ($lembur as $item) {
-                $jamMulai = \Carbon\Carbon::parse($item->jam_mulai);
-                $jamSelesai = \Carbon\Carbon::parse($item->jam_selesai);
-                $durasiJam = $jamSelesai->diffInHours($jamMulai);
-
-                $totalLembur += $durasiJam;
-
-                if ($item->jenis_lembur == 'Hari Kerja') {
-                    $lemburHariBiasa += $durasiJam;
-                } else { // Hari Libur
-                    $lemburHariLibur += $durasiJam;
-                }
-            }
-
-            // Store all calculated data with the penggajian object
-            $penggajian->dataAbsensi = [
-                'absensi' => $absensi,
-                'total_hari' => $totalHari,
-                'total_hari_kerja' => $hariKerja,
-                'hadir' => $hariHadir,
-                'izin' => $hariIzin,
-                'cuti' => $hariCuti,
-                'izin_cuti' => $izinCuti,
-                'tidak_hadir' => $hariTidakHadir,
-                'total_keterlambatan' => $totalKeterlambatan,
-                'total_pulang_awal' => $totalPulangAwal,
-                'total_lembur' => $totalLembur,
-                'lembur_hari_biasa' => $lemburHariBiasa,
-                'lembur_hari_libur' => $lemburHariLibur,
-                'lembur_disetujui' => $lembur
-            ];
-
-            // Add variables needed for the slip view
-            $penggajian->hariKerja = $hariKerja;
-            $penggajian->hariHadir = $hariHadir;
-            $penggajian->hariIzin = $hariIzin;
-            $penggajian->hariCuti = $hariCuti;
-            $penggajian->izinCuti = $izinCuti;
-            $penggajian->hariTidakHadir = $hariTidakHadir;
-            $penggajian->kehadiranRate = $kehadiranRate;
-            $penggajian->keterlambatanFormatted = $keterlambatanFormatted;
-            $penggajian->pulangAwalFormatted = $pulangAwalFormatted;
-            $penggajian->totalLembur = $totalLembur;
-            $penggajian->lemburHariBiasa = $lemburHariBiasa;
-            $penggajian->lemburHariLibur = $lemburHariLibur;
+            $this->processAttendanceData($penggajian, $periode);
         }
 
         // Pass to view
@@ -225,6 +78,25 @@ class PenggajianController extends Controller
         // Get the period
         $periode = $penggajian->periodeGaji;
 
+        // Process attendance data
+        $this->processAttendanceData($penggajian, $periode);
+
+        // Create a collection with single item and pass variables needed for the view
+        $penggajians = collect([$penggajian]);
+
+        // Pass all necessary variables to the view
+        return view('admin.penggajians.slip', compact('penggajians', 'periode'));
+    }
+
+    /**
+     * Process attendance data for a specific penggajian
+     *
+     * @param Penggajian $penggajian
+     * @param PeriodeGaji $periode
+     * @return Penggajian
+     */
+    protected function processAttendanceData(Penggajian $penggajian, PeriodeGaji $periode)
+    {
         // Load attendance data
         $absensi = Absensi::where('karyawan_id', $penggajian->id_karyawan)
             ->whereBetween('tanggal', [$periode->tanggal_mulai, $periode->tanggal_selesai])
@@ -359,43 +231,21 @@ class PenggajianController extends Controller
             'lembur_disetujui' => $lembur
         ];
 
-        // Calculate attendance rate
-        $kehadiranRate = $hariKerja > 0 ? round(($hariHadir / $hariKerja) * 100, 2) : 0;
+        // Add variables needed for the slip view
+        $penggajian->hariKerja = $hariKerja;
+        $penggajian->hariHadir = $hariHadir;
+        $penggajian->hariIzin = $hariIzin;
+        $penggajian->hariCuti = $hariCuti;
+        $penggajian->izinCuti = $izinCuti;
+        $penggajian->hariTidakHadir = $hariTidakHadir;
+        $penggajian->kehadiranRate = $kehadiranRate;
+        $penggajian->keterlambatanFormatted = $keterlambatanFormatted;
+        $penggajian->pulangAwalFormatted = $pulangAwalFormatted;
+        $penggajian->totalLembur = $totalLembur;
+        $penggajian->lemburHariBiasa = $lemburHariBiasa;
+        $penggajian->lemburHariLibur = $lemburHariLibur;
 
-        // Create a collection with single item and pass variables needed for the view
-        $penggajians = collect([$penggajian]);
-
-        // Pass variables needed for the slip view
-        $hariKerja = $hariKerja;
-        $hariHadir = $hariHadir;
-        $hariIzin = $hariIzin;
-        $hariCuti = $hariCuti;
-        $izinCuti = $izinCuti;
-        $hariTidakHadir = $hariTidakHadir;
-        $kehadiranRate = $kehadiranRate;
-        $keterlambatanFormatted = $keterlambatanFormatted;
-        $pulangAwalFormatted = $pulangAwalFormatted;
-        $totalLembur = $totalLembur;
-        $lemburHariBiasa = $lemburHariBiasa;
-        $lemburHariLibur = $lemburHariLibur;
-
-        // Pass to the same view
-        return view('admin.penggajians.slip', compact(
-            'penggajians',
-            'periode',
-            'hariKerja',
-            'hariHadir',
-            'hariIzin',
-            'hariCuti',
-            'izinCuti',
-            'hariTidakHadir',
-            'kehadiranRate',
-            'keterlambatanFormatted',
-            'pulangAwalFormatted',
-            'totalLembur',
-            'lemburHariBiasa',
-            'lemburHariLibur'
-        ));
+        return $penggajian;
     }
 
     /**
@@ -968,6 +818,24 @@ class PenggajianController extends Controller
                     ];
                 }
 
+                // Tunjangan dari jabatan
+                if ($karyawan->jabatan && $karyawan->jabatan->tunjangan_jabatan > 0) {
+                    $tunjangan         += $karyawan->jabatan->tunjangan_jabatan;
+                    $detailTunjangan[]  = [
+                        'nama'    => 'Tunjangan Jabatan',
+                        'nominal' => $karyawan->jabatan->tunjangan_jabatan
+                    ];
+                }
+
+                // Tunjangan dari profesi
+                if ($karyawan->profesi && $karyawan->profesi->tunjangan_profesi > 0) {
+                    $tunjangan         += $karyawan->profesi->tunjangan_profesi;
+                    $detailTunjangan[]  = [
+                        'nama'    => 'Tunjangan Profesi',
+                        'nominal' => $karyawan->profesi->tunjangan_profesi
+                    ];
+                }
+
                 // For now, no deductions
                 $potongan       = 0;
                 $detailPotongan = [];
@@ -977,10 +845,10 @@ class PenggajianController extends Controller
 
                 // Department details
                 $detailDepartemen = [
-                    'departemen' => $karyawan->departemen ? $karyawan->departemen->nama : null,
-                    'bagian'     => $karyawan->bagian ? $karyawan->bagian->nama : null,
-                    'jabatan'    => $karyawan->jabatan ? $karyawan->jabatan->nama : null,
-                    'profesi'    => $karyawan->profesi ? $karyawan->profesi->nama : null,
+                    'departemen' => $karyawan->departemen ? $karyawan->departemen->name_departemen : null,
+                    'bagian'     => $karyawan->bagian ? $karyawan->bagian->name_bagian : null,
+                    'jabatan'    => $karyawan->jabatan ? $karyawan->jabatan->name_jabatan : null,
+                    'profesi'    => $karyawan->profesi ? $karyawan->profesi->name_profesi : null,
                 ];
 
                 // Create payroll entry
@@ -1251,95 +1119,13 @@ class PenggajianController extends Controller
             'dataPotongan'
         ));
     }
-    // public function process(Request $request)
-    // {
-    //     $request->validate([
-    //         'karyawan_id' => 'required|exists:karyawans,id',
-    //         'periode_id' => 'required|exists:periodegajis,id',
-    //         'gaji_pokok' => 'required|numeric|min:0',
-    //         'total_tunjangan' => 'required|numeric|min:0',
-    //         'total_potongan' => 'required|numeric|min:0',
-    //         'gaji_bersih' => 'required|numeric',
-    //         'tunjangan' => 'array',
-    //         'tunjangan.*.nama' => 'required|string',
-    //         'tunjangan.*.nominal' => 'required|numeric|min:0',
-    //         'potongan' => 'array',
-    //         'potongan.*.nama' => 'required|string',
-    //         'potongan.*.nominal' => 'required|numeric|min:0',
-    //     ]);
 
-    //     $karyawanId = $request->karyawan_id;
-    //     $periodeId = $request->periode_id;
-
-    //     // Ambil data karyawan dan periode
-    //     $karyawan = Karyawan::with(['departemen', 'bagian', 'jabatan', 'profesi'])->findOrFail($karyawanId);
-    //     $periode = PeriodeGaji::findOrFail($periodeId);
-
-    //     // Validasi bahwa belum ada penggajian untuk karyawan dan periode ini
-    //     $exists = Penggajian::where('id_periode', $periodeId)
-    //         ->where('id_karyawan', $karyawanId)
-    //         ->exists();
-
-    //     if ($exists) {
-    //         return redirect()->route('penggajian.index')
-    //             ->with('error', "Penggajian untuk karyawan {$karyawan->nama_karyawan} pada periode ini sudah ada.");
-    //     }
-
-    //     // Ambil data tunjangan dan potongan dari form
-    //     $gajiPokok = $request->gaji_pokok;
-    //     $totalTunjangan = $request->total_tunjangan;
-    //     $totalPotongan = $request->total_potongan;
-    //     $gajiBersih = $request->gaji_bersih;
-
-    //     // Filter out empty tunjangan
-    //     $detailTunjangan = collect($request->tunjangan)->filter(function ($tunjangan) {
-    //         return !empty($tunjangan['nama']) && isset($tunjangan['nominal']) && $tunjangan['nominal'] > 0;
-    //     })->values()->toArray();
-
-    //     // Filter out empty potongan
-    //     $detailPotongan = collect($request->potongan)->filter(function ($potongan) {
-    //         return !empty($potongan['nama']) && isset($potongan['nominal']) && $potongan['nominal'] > 0;
-    //     })->values()->toArray();
-
-    //     // Department details
-    //     $detailDepartemen = [
-    //         'departemen' => $karyawan->departemen ? $karyawan->departemen->name_departemen : null,
-    //         'bagian' => $karyawan->bagian ? $karyawan->bagian->name_bagian : null,
-    //         'jabatan' => $karyawan->jabatan ? $karyawan->jabatan->name_jabatan : null,
-    //         'profesi' => $karyawan->profesi ? $karyawan->profesi->name_profesi : null,
-    //     ];
-
-    //     // Create payroll entry
-    //     DB::beginTransaction();
-    //     try {
-    //         Penggajian::create([
-    //             'id' => Str::uuid(),
-    //             'id_periode' => $periodeId,
-    //             'id_karyawan' => $karyawanId,
-    //             'periode_awal' => $periode->tanggal_mulai,
-    //             'periode_akhir' => $periode->tanggal_selesai,
-    //             'gaji_pokok' => $gajiPokok,
-    //             'tunjangan' => $totalTunjangan,
-    //             'detail_tunjangan' => $detailTunjangan, // Already using mutator to handle the JSON encoding
-    //             'potongan' => $totalPotongan,
-    //             'detail_potongan' => $detailPotongan, // Already using mutator to handle the JSON encoding
-    //             'detail_departemen' => $detailDepartemen, // Already using mutator to handle the JSON encoding
-    //             'gaji_bersih' => $gajiBersih,
-    //         ]);
-
-    //         DB::commit();
-
-    //         return redirect()->route('penggajian.index')
-    //             ->with('success', "Penggajian untuk karyawan {$karyawan->nama_karyawan} berhasil diproses.");
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         return redirect()->back()
-    //             ->with('error', "Terjadi kesalahan: " . $e->getMessage());
-    //     }
-    // }
+    /**
+     * Process payroll data and create entry
+     * This method is modified to handle proper JSON encoding for detail fields
+     */
     public function process(Request $request)
     {
-        // Add debugging to see if the method is being called
         Log::info('Process method called', ['request' => $request->all()]);
 
         $request->validate([
@@ -1426,5 +1212,60 @@ class PenggajianController extends Controller
             return redirect()->back()
                 ->with('error', "Terjadi kesalahan: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Generate detailed payslips with 3 per page
+     */
+    public function printDetailedSlips(Request $request)
+    {
+        $request->validate([
+            'periode_id' => 'required|exists:periodegajis,id',
+            'departemen_id' => 'nullable|exists:departemens,id',
+            'karyawan_id' => 'nullable|exists:karyawans,id',
+            'slips_per_page' => 'nullable|integer|min:1|max:3',
+        ]);
+
+        // Default to 3 slips per page if not specified
+        $slipsPerPage = $request->slips_per_page ?? 3;
+
+        // Get the period
+        $periode = PeriodeGaji::findOrFail($request->periode_id);
+
+        // Build query
+        $query = Penggajian::with([
+            'karyawan.departemen',
+            'karyawan.bagian',
+            'karyawan.jabatan',
+            'karyawan.profesi',
+            'periodeGaji'
+        ])->where('id_periode', $request->periode_id);
+
+        // Filter by department if specified
+        if ($request->filled('departemen_id')) {
+            $karyawanIds = Karyawan::where('id_departemen', $request->departemen_id)->pluck('id')->toArray();
+            $query->whereIn('id_karyawan', $karyawanIds);
+        }
+
+        // Filter by specific karyawan if specified
+        if ($request->filled('karyawan_id')) {
+            $query->where('id_karyawan', $request->karyawan_id);
+        }
+
+        // Get penggajian data
+        $penggajians = $query->orderBy('id_karyawan')->get();
+
+        // If no data found
+        if ($penggajians->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada data penggajian yang sesuai dengan kriteria tersebut.');
+        }
+
+        // Process each penggajian to add attendance data
+        foreach ($penggajians as $penggajian) {
+            $this->processAttendanceData($penggajian, $periode);
+        }
+
+        // Pass to view - use our detailed payslip view
+        return view('admin.penggajians.detailed-slip', compact('penggajians', 'periode', 'slipsPerPage'));
     }
 }
